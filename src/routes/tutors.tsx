@@ -80,8 +80,8 @@ function TutorsPage() {
         )
         .eq("is_active", true);
 
-      if (filters.mode !== "any") q = q.eq("mode", filters.mode);
-      if (filters.gender !== "any") q = q.eq("gender", filters.gender);
+      if (filters.mode !== "any") q = q.eq("mode", filters.mode as "online" | "offline" | "both");
+      if (filters.gender !== "any") q = q.eq("gender", filters.gender as "male" | "female" | "other" | "prefer_not_to_say");
       if (filters.feeMax < 5000) q = q.lte("fee_min", filters.feeMax);
       if (filters.minRating > 0) q = q.gte("rating_avg", filters.minRating);
 
