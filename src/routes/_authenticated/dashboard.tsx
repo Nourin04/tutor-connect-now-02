@@ -65,7 +65,8 @@ function DashboardPage() {
 function TeacherDashboard() {
   const [tp, setTp] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [contactCount, setContactCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [acceptedCount, setAcceptedCount] = useState(0);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [userId, setUserId] = useState("");
 
@@ -74,15 +75,17 @@ function TeacherDashboard() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       setUserId(u.user.id);
-      const [tpRes, rRes, cRes, sRes] = await Promise.all([
+      const [tpRes, rRes, pRes, aRes, sRes] = await Promise.all([
         supabase.from("teacher_profiles").select("*").eq("user_id", u.user.id).maybeSingle(),
         supabase.from("reviews").select("id, rating, comment, created_at, profiles!reviews_reviewer_id_fkey(full_name)").eq("teacher_id", u.user.id).order("created_at", { ascending: false }).limit(5),
-        supabase.from("contact_events").select("id", { count: "exact", head: true }).eq("teacher_id", u.user.id),
+        supabase.from("contact_events").select("id", { count: "exact", head: true }).eq("teacher_id", u.user.id).eq("status", "pending"),
+        supabase.from("contact_events").select("id", { count: "exact", head: true }).eq("teacher_id", u.user.id).eq("status", "accepted"),
         supabase.from("teacher_subjects").select("subject, level, board").eq("teacher_id", u.user.id),
       ]);
       setTp(tpRes.data);
       setReviews((rRes.data as any[]) ?? []);
-      setContactCount(cRes.count ?? 0);
+      setPendingCount(pRes.count ?? 0);
+      setAcceptedCount(aRes.count ?? 0);
       setSubjects((sRes.data as any[]) ?? []);
     })();
   }, []);
