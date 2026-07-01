@@ -77,6 +77,7 @@ function AuthPage() {
             const nextMode = v as "signin" | "signup";
             setTab(nextMode);
             navigate({
+              to: "/auth",
               search: (prev) => ({ ...prev, mode: nextMode }),
               replace: true,
             });
