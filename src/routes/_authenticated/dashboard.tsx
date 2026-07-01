@@ -199,7 +199,7 @@ function TeacherDashboard() {
 
 function LearnerDashboard() {
   const [sp, setSp] = useState<any>(null);
-  const [recentTutors, setRecentTutors] = useState<any[]>([]);
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [dueReviews, setDueReviews] = useState<any[]>([]);
 
   useEffect(() => {
@@ -210,7 +210,7 @@ function LearnerDashboard() {
         supabase.from("student_profiles").select("*").eq("user_id", u.user.id).maybeSingle(),
         supabase
           .from("contact_events")
-          .select("created_at, teacher_id, teacher_profiles!inner(user_id, profiles!inner(full_name, city, area))")
+          .select("id, status, created_at, teacher_id, teacher:profiles!contact_events_teacher_id_fkey(full_name, city, area)")
           .eq("viewer_id", u.user.id)
           .order("created_at", { ascending: false })
           .limit(10),
@@ -218,11 +218,11 @@ function LearnerDashboard() {
       setSp(spRes.data);
 
       const events = (evRes.data as any[]) ?? [];
-      setRecentTutors(events.slice(0, 5));
+      setRecentRequests(events.slice(0, 5));
 
-      // Reviews due: contact_event older than 3 days with no review yet
+      // Reviews due: accepted requests older than 3 days with no review yet
       const olderThan = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-      const candidates = events.filter((e) => new Date(e.created_at) < olderThan);
+      const candidates = events.filter((e) => e.status === "accepted" && new Date(e.created_at) < olderThan);
       const teacherIds = [...new Set(candidates.map((e) => e.teacher_id))];
       if (teacherIds.length > 0) {
         const { data: mine } = await supabase.from("reviews").select("teacher_id").eq("reviewer_id", u.user.id).in("teacher_id", teacherIds);
