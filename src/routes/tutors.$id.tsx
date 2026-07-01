@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/site/AppHeader";
@@ -17,7 +17,10 @@ import {
   Languages,
   GraduationCap,
   Briefcase,
-  Eye,
+  Send,
+  CheckCircle2,
+  XCircle,
+  Hourglass,
 } from "lucide-react";
 import { fetchMyRoles } from "@/lib/auth-helpers";
 
@@ -31,6 +34,8 @@ export const Route = createFileRoute("/tutors/$id")({
   component: TutorProfilePage,
 });
 
+type ReqStatus = "pending" | "accepted" | "declined";
+
 function TutorProfilePage() {
   const { id } = Route.useParams();
   const [tutor, setTutor] = useState<any | null>(null);
@@ -39,9 +44,32 @@ function TutorProfilePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [me, setMe] = useState<{ id: string; roles: string[] } | null>(null);
-  const [revealed, setRevealed] = useState(false);
-  const [hasContactEvent, setHasContactEvent] = useState(false);
+  const [request, setRequest] = useState<{ id: string; status: ReqStatus; message: string } | null>(null);
+  const [contact, setContact] = useState<{ email: string; phone: string } | null>(null);
   const [myReview, setMyReview] = useState<any | null>(null);
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function loadRequest(userId: string) {
+    const { data } = await supabase
+      .from("contact_events")
+      .select("id, status, message")
+      .eq("viewer_id", userId)
+      .eq("teacher_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) {
+      setRequest(data as any);
+      if ((data as any).status === "accepted") {
+        const { data: c } = await supabase.rpc("get_teacher_contact", { _teacher_id: id });
+        if (c && c.length > 0) setContact(c[0] as any);
+      }
+    } else {
+      setRequest(null);
+      setContact(null);
+    }
+  }
 
   useEffect(() => {
     let alive = true;
@@ -51,7 +79,7 @@ function TutorProfilePage() {
         supabase
           .from("teacher_profiles")
           .select(
-            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, email, phone, city, area, avatar_url), teacher_subjects(subject, level, board)"
+            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject, level, board)"
           )
           .eq("user_id", id)
           .maybeSingle(),
@@ -70,13 +98,7 @@ function TutorProfilePage() {
       if (user) {
         const roles = await fetchMyRoles();
         setMe({ id: user.id, roles });
-        const { data: ev } = await supabase
-          .from("contact_events")
-          .select("id")
-          .eq("viewer_id", user.id)
-          .eq("teacher_id", id)
-          .limit(1);
-        if ((ev ?? []).length > 0) setHasContactEvent(true);
+        await loadRequest(user.id);
         const mine = (rRes.data as any[])?.find((r) => r.reviewer_id === user.id);
         if (mine) setMyReview(mine);
       }
@@ -87,22 +109,30 @@ function TutorProfilePage() {
     };
   }, [id]);
 
-  async function revealContact() {
-    if (!me) {
-      toast.error("Please sign in to see contact details.");
-      return;
-    }
+  async function sendRequest() {
+    if (!me) return toast.error("Please sign in first.");
+    if (message.length > 500) return toast.error("Message too long (max 500).");
+    setSending(true);
     const { error } = await supabase.from("contact_events").insert({
       viewer_id: me.id,
       teacher_id: id,
+      message: message.trim(),
+      status: "pending",
     });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setRevealed(true);
-    setHasContactEvent(true);
-    toast.success("Contact details revealed.");
+    setSending(false);
+    if (error) return toast.error(error.message);
+    toast.success("Request sent. The tutor will be notified.");
+    setMessage("");
+    await loadRequest(me.id);
+  }
+
+  async function withdrawRequest() {
+    if (!request) return;
+    const { error } = await supabase.from("contact_events").delete().eq("id", request.id);
+    if (error) return toast.error(error.message);
+    toast.success("Request withdrawn.");
+    setRequest(null);
+    setContact(null);
   }
 
   if (loading) {
@@ -131,6 +161,7 @@ function TutorProfilePage() {
   }
 
   const learner = me && (me.roles.includes("student") || me.roles.includes("parent"));
+  const canReview = learner && request?.status === "accepted";
 
   return (
     <div className="min-h-screen bg-background">
@@ -140,7 +171,6 @@ function TutorProfilePage() {
 
         <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
-            {/* Header */}
             <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary-soft text-2xl font-bold text-primary">
@@ -170,7 +200,6 @@ function TutorProfilePage() {
               </div>
             </section>
 
-            {/* Qualifications */}
             <Section title="Qualifications" icon={GraduationCap}>
               <Row label="Highest degree" value={tutor.highest_degree || "—"} />
               <Row label="University / Institution" value={tutor.university || "—"} />
@@ -188,7 +217,6 @@ function TutorProfilePage() {
               )}
             </Section>
 
-            {/* Subjects */}
             <Section title="Subjects & boards">
               <div className="grid gap-2 sm:grid-cols-2">
                 {(tutor.teacher_subjects ?? []).map((s: any, i: number) => (
@@ -201,7 +229,6 @@ function TutorProfilePage() {
               </div>
             </Section>
 
-            {/* Availability */}
             <Section title="Availability" icon={Clock}>
               <Row label="Days" value={(tutor.available_days ?? []).join(", ") || "—"} />
               <Row label="Time slots" value={(tutor.time_slots ?? []).join(", ") || "—"} />
@@ -209,11 +236,10 @@ function TutorProfilePage() {
               <Row label="Languages" value={(tutor.languages ?? []).join(", ") || "—"} icon={Languages} />
             </Section>
 
-            {/* Reviews */}
             <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold">Reviews ({reviews.length})</h2>
 
-              {learner && hasContactEvent && (
+              {canReview && (
                 <ReviewForm
                   teacherId={id}
                   existing={myReview}
@@ -226,9 +252,9 @@ function TutorProfilePage() {
                   }}
                 />
               )}
-              {learner && !hasContactEvent && (
+              {learner && !canReview && (
                 <p className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">
-                  Reveal this tutor's contact details first to leave a review.
+                  You can leave a review after this tutor accepts your contact request.
                 </p>
               )}
               {!me && (
@@ -257,7 +283,6 @@ function TutorProfilePage() {
             </section>
           </div>
 
-          {/* Sidebar */}
           <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
             <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Fees</p>
@@ -267,14 +292,53 @@ function TutorProfilePage() {
               </p>
 
               <div className="mt-5">
-                {!revealed && !hasContactEvent ? (
-                  <Button className="w-full" onClick={revealContact}>
-                    <Eye className="mr-2 h-4 w-4" /> Reveal contact
-                  </Button>
-                ) : (
+                {!me && (
+                  <Button asChild className="w-full"><Link to="/auth">Sign in to contact</Link></Button>
+                )}
+                {me && !learner && (
+                  <p className="rounded-xl border border-dashed border-border bg-surface p-3 text-xs text-muted-foreground">
+                    Only students or parents can request contact.
+                  </p>
+                )}
+                {learner && !request && (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Introduce yourself and what you'd like help with (optional)"
+                      rows={3}
+                      maxLength={500}
+                    />
+                    <Button className="w-full" onClick={sendRequest} disabled={sending}>
+                      <Send className="mr-2 h-4 w-4" /> {sending ? "Sending…" : "Request contact"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">The tutor will be notified. You'll see their email and phone once they accept.</p>
+                  </div>
+                )}
+                {learner && request?.status === "pending" && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary-soft p-3 text-sm">
+                      <Hourglass className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Request pending — awaiting reply.</span>
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full" onClick={withdrawRequest}>Withdraw request</Button>
+                  </div>
+                )}
+                {learner && request?.status === "declined" && (
+                  <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                    <div className="flex items-center gap-2 font-medium text-destructive">
+                      <XCircle className="h-4 w-4" /> Request was declined.
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">This tutor isn't available right now. Try another tutor.</p>
+                  </div>
+                )}
+                {learner && request?.status === "accepted" && (
                   <div className="space-y-2 rounded-xl border border-border bg-surface p-3 text-sm">
-                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> <a className="hover:underline" href={`tel:${tutor.profiles?.phone}`}>{tutor.profiles?.phone || "—"}</a></div>
-                    <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> <a className="break-all hover:underline" href={`mailto:${tutor.profiles?.email}`}>{tutor.profiles?.email}</a></div>
+                    <div className="flex items-center gap-2 text-primary font-medium">
+                      <CheckCircle2 className="h-4 w-4" /> Contact accepted
+                    </div>
+                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> <a className="hover:underline" href={`tel:${contact?.phone}`}>{contact?.phone || "—"}</a></div>
+                    <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> <a className="break-all hover:underline" href={`mailto:${contact?.email}`}>{contact?.email || "—"}</a></div>
                   </div>
                 )}
                 <p className="mt-3 text-xs text-muted-foreground">
@@ -321,17 +385,13 @@ function ReviewForm({ teacherId, existing, onSaved }: { teacherId: string; exist
 
   async function submit() {
     if (rating < 1 || rating > 5) return;
-    if (comment.length > 1000) {
-      toast.error("Comment is too long (max 1000 characters).");
-      return;
-    }
+    if (comment.length > 1000) return toast.error("Comment is too long (max 1000 characters).");
     setSaving(true);
     const { data: userRes } = await supabase.auth.getUser();
     const reviewer_id = userRes.user?.id;
     if (!reviewer_id) {
       setSaving(false);
-      toast.error("Please sign in to leave a review.");
-      return;
+      return toast.error("Please sign in to leave a review.");
     }
     const { data, error } = await supabase
       .from("reviews")
@@ -342,10 +402,7 @@ function ReviewForm({ teacherId, existing, onSaved }: { teacherId: string; exist
       .select("id, rating, comment, created_at, reviewer_id, profiles!reviews_reviewer_id_fkey(full_name)")
       .single();
     setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) return toast.error(error.message);
     toast.success(existing ? "Review updated." : "Thanks for your review!");
     onSaved(data);
   }
@@ -374,6 +431,4 @@ function ReviewForm({ teacherId, existing, onSaved }: { teacherId: string; exist
   );
 }
 
-// Unused import marker
 void Badge;
-void useNavigate;
