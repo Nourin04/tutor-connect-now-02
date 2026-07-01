@@ -1,4 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { fetchPrimaryRole, dashboardPathForRole, type AppRole } from "@/lib/auth-helpers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +77,27 @@ function Landing() {
 
 /* ---------- Header ---------- */
 function Header() {
+  const [email, setEmail] = useState<string | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!mounted) return;
+      setEmail(data.user?.email ?? null);
+      if (data.user) setRole(await fetchPrimaryRole());
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
+      setEmail(s?.user?.email ?? null);
+      if (s?.user) setRole(await fetchPrimaryRole());
+      else setRole(null);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -86,10 +110,22 @@ function Header() {
           <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
         </nav>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="hidden sm:inline-flex">Sign in</Button>
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft">
-            Get started
-          </Button>
+          {email ? (
+            <Button size="sm" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft">
+              <Link to={dashboardPathForRole(role)}>Go to Dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" className="hidden sm:inline-flex" asChild>
+                <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
+              </Button>
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft" asChild>
+                <Link to="/auth" search={{ mode: "signup" }}>
+                  Get started
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>
@@ -520,8 +556,10 @@ function ForTeachers() {
                 ))}
               </ul>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button className="bg-white text-primary hover:bg-white/90">
-                  Become a tutor
+                <Button className="bg-white text-primary hover:bg-white/90" asChild>
+                  <Link to="/auth" search={{ mode: "signup", role: "teacher" }}>
+                    Become a tutor
+                  </Link>
                 </Button>
                 <Button
                   variant="outline"
@@ -707,16 +745,19 @@ function CTASection() {
             in their area, at the right price.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              Find a tutor
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+              <Link to="/tutors">Find a tutor</Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="border-background/30 bg-transparent text-background hover:bg-background/10 hover:text-background"
+              asChild
             >
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Become a tutor
+              <Link to="/auth" search={{ mode: "signup", role: "teacher" }}>
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Become a tutor
+              </Link>
             </Button>
           </div>
         </div>

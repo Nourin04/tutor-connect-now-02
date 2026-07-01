@@ -43,6 +43,11 @@ function AuthPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"signin" | "signup">(mode);
 
+  // Sync tab state with mode search param
+  useEffect(() => {
+    setTab(mode);
+  }, [mode]);
+
   // Redirect if already signed in
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -66,7 +71,18 @@ function AuthPage() {
           Find the right tutor — or start tutoring — in minutes.
         </p>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")} className="mt-8">
+        <Tabs
+          value={tab}
+          onValueChange={(v) => {
+            const nextMode = v as "signin" | "signup";
+            setTab(nextMode);
+            navigate({
+              search: (prev) => ({ ...prev, mode: nextMode }),
+              replace: true,
+            });
+          }}
+          className="mt-8"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign in</TabsTrigger>
             <TabsTrigger value="signup">Create account</TabsTrigger>
