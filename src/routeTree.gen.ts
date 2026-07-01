@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorsIdRouteImport } from './routes/tutors.$id'
+import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedOnboardingTeacherRouteImport } from './routes/_authenticated/onboarding.teacher'
@@ -55,6 +56,11 @@ const TutorsIdRoute = TutorsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => TutorsRoute,
 } as any)
+const AuthenticatedRequestsRoute = AuthenticatedRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/tutors': typeof TutorsRouteWithChildren
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/requests': typeof AuthenticatedRequestsRoute
   '/tutors/$id': typeof TutorsIdRoute
   '/onboarding/learner': typeof AuthenticatedOnboardingLearnerRoute
   '/onboarding/teacher': typeof AuthenticatedOnboardingTeacherRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/tutors': typeof TutorsRouteWithChildren
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/requests': typeof AuthenticatedRequestsRoute
   '/tutors/$id': typeof TutorsIdRoute
   '/onboarding/learner': typeof AuthenticatedOnboardingLearnerRoute
   '/onboarding/teacher': typeof AuthenticatedOnboardingTeacherRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/tutors': typeof TutorsRouteWithChildren
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/requests': typeof AuthenticatedRequestsRoute
   '/tutors/$id': typeof TutorsIdRoute
   '/_authenticated/onboarding/learner': typeof AuthenticatedOnboardingLearnerRoute
   '/_authenticated/onboarding/teacher': typeof AuthenticatedOnboardingTeacherRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/tutors'
     | '/admin'
     | '/dashboard'
+    | '/requests'
     | '/tutors/$id'
     | '/onboarding/learner'
     | '/onboarding/teacher'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/tutors'
     | '/admin'
     | '/dashboard'
+    | '/requests'
     | '/tutors/$id'
     | '/onboarding/learner'
     | '/onboarding/teacher'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/tutors'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
+    | '/_authenticated/requests'
     | '/tutors/$id'
     | '/_authenticated/onboarding/learner'
     | '/_authenticated/onboarding/teacher'
@@ -216,6 +228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TutorsIdRouteImport
       parentRoute: typeof TutorsRoute
     }
+    '/_authenticated/requests': {
+      id: '/_authenticated/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof AuthenticatedRequestsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -250,6 +269,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedRequestsRoute: typeof AuthenticatedRequestsRoute
   AuthenticatedOnboardingLearnerRoute: typeof AuthenticatedOnboardingLearnerRoute
   AuthenticatedOnboardingTeacherRoute: typeof AuthenticatedOnboardingTeacherRoute
 }
@@ -257,6 +277,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedRequestsRoute: AuthenticatedRequestsRoute,
   AuthenticatedOnboardingLearnerRoute: AuthenticatedOnboardingLearnerRoute,
   AuthenticatedOnboardingTeacherRoute: AuthenticatedOnboardingTeacherRoute,
 }
