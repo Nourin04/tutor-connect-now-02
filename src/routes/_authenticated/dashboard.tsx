@@ -254,13 +254,13 @@ function LearnerDashboard() {
         {dueReviews.length > 0 && (
           <section className="rounded-2xl border border-primary/30 bg-primary-soft p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold"><MessageCircle className="h-4 w-4 text-primary" /> Share a review</h2>
-            <p className="mt-1 text-sm">It's been a few days since you reached out to these tutors. Help other families by sharing what worked.</p>
+            <p className="mt-1 text-sm">It's been a few days since these tutors accepted your contact. Help other families by sharing what worked.</p>
             <ul className="mt-3 space-y-2">
               {dueReviews.map((d) => (
                 <li key={d.teacher_id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
                   <div>
-                    <p className="font-semibold">{d.teacher_profiles?.profiles?.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{[d.teacher_profiles?.profiles?.area, d.teacher_profiles?.profiles?.city].filter(Boolean).join(", ")}</p>
+                    <p className="font-semibold">{d.teacher?.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{[d.teacher?.area, d.teacher?.city].filter(Boolean).join(", ")}</p>
                   </div>
                   <Button asChild size="sm"><Link to="/tutors/$id" params={{ id: d.teacher_id }}>Review</Link></Button>
                 </li>
@@ -268,6 +268,30 @@ function LearnerDashboard() {
             </ul>
           </section>
         )}
+
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Recent contact requests</h2>
+            <Button asChild variant="outline" size="sm"><Link to="/requests">View all</Link></Button>
+          </div>
+          {recentRequests.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">You haven't sent any requests yet. <Link to="/tutors" className="font-semibold text-primary">Browse tutors</Link></p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {recentRequests.map((t: any) => (
+                <li key={t.id} className="flex items-center justify-between rounded-xl border border-border bg-background p-3">
+                  <div>
+                    <p className="font-semibold">{t.teacher?.full_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[t.teacher?.area, t.teacher?.city].filter(Boolean).join(", ")} · <span className="capitalize">{t.status}</span>
+                    </p>
+                  </div>
+                  <Button asChild variant="outline" size="sm"><Link to="/tutors/$id" params={{ id: t.teacher_id }}>View</Link></Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
           <h2 className="text-lg font-semibold">Recently viewed tutors</h2>
