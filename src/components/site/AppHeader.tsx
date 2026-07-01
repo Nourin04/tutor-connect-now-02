@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { Brand } from "./Brand";
-import { User, LogOut, LayoutDashboard, Search } from "lucide-react";
+import { User, LogOut, LayoutDashboard, Search, Inbox } from "lucide-react";
 import {
   fetchPrimaryRole,
   type AppRole,
@@ -87,6 +87,14 @@ export function AppHeader() {
                     Find tutors
                   </Link>
                 </DropdownMenuItem>
+                {role && role !== "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/requests">
+                      <Inbox className="mr-2 h-4 w-4" />
+                      {role === "teacher" ? "Contact requests" : "My requests"}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />

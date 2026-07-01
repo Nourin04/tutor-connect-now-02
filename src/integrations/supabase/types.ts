@@ -17,20 +17,32 @@ export type Database = {
       contact_events: {
         Row: {
           created_at: string
+          decided_at: string | null
           id: string
+          message: string
+          status: Database["public"]["Enums"]["contact_request_status"]
           teacher_id: string
+          updated_at: string
           viewer_id: string
         }
         Insert: {
           created_at?: string
+          decided_at?: string | null
           id?: string
+          message?: string
+          status?: Database["public"]["Enums"]["contact_request_status"]
           teacher_id: string
+          updated_at?: string
           viewer_id: string
         }
         Update: {
           created_at?: string
+          decided_at?: string | null
           id?: string
+          message?: string
+          status?: Database["public"]["Enums"]["contact_request_status"]
           teacher_id?: string
+          updated_at?: string
           viewer_id?: string
         }
         Relationships: [
@@ -308,6 +320,13 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_teacher_contact: {
+        Args: { _teacher_id: string }
+        Returns: {
+          email: string
+          phone: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -318,6 +337,7 @@ export type Database = {
     }
     Enums: {
       app_role: "student" | "parent" | "teacher" | "admin"
+      contact_request_status: "pending" | "accepted" | "declined"
       gender_type: "male" | "female" | "other" | "prefer_not_to_say"
       teaching_mode: "online" | "offline" | "both"
     }
@@ -448,6 +468,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["student", "parent", "teacher", "admin"],
+      contact_request_status: ["pending", "accepted", "declined"],
       gender_type: ["male", "female", "other", "prefer_not_to_say"],
       teaching_mode: ["online", "offline", "both"],
     },

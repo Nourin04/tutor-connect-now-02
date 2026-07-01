@@ -6,7 +6,7 @@ import { AppFooter } from "@/components/site/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Star, Eye, Pencil, Search, MessageCircle, GraduationCap } from "lucide-react";
+import { Star, Inbox, Pencil, Search, MessageCircle, GraduationCap, Hourglass } from "lucide-react";
 import { fetchPrimaryRole, type AppRole, dashboardPathForRole } from "@/lib/auth-helpers";
 import { toast } from "sonner";
 
@@ -65,7 +65,8 @@ function DashboardPage() {
 function TeacherDashboard() {
   const [tp, setTp] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
-  const [contactCount, setContactCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [acceptedCount, setAcceptedCount] = useState(0);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [userId, setUserId] = useState("");
 
@@ -74,15 +75,17 @@ function TeacherDashboard() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       setUserId(u.user.id);
-      const [tpRes, rRes, cRes, sRes] = await Promise.all([
+      const [tpRes, rRes, pRes, aRes, sRes] = await Promise.all([
         supabase.from("teacher_profiles").select("*").eq("user_id", u.user.id).maybeSingle(),
         supabase.from("reviews").select("id, rating, comment, created_at, profiles!reviews_reviewer_id_fkey(full_name)").eq("teacher_id", u.user.id).order("created_at", { ascending: false }).limit(5),
-        supabase.from("contact_events").select("id", { count: "exact", head: true }).eq("teacher_id", u.user.id),
+        supabase.from("contact_events").select("id", { count: "exact", head: true }).eq("teacher_id", u.user.id).eq("status", "pending"),
+        supabase.from("contact_events").select("id", { count: "exact", head: true }).eq("teacher_id", u.user.id).eq("status", "accepted"),
         supabase.from("teacher_subjects").select("subject, level, board").eq("teacher_id", u.user.id),
       ]);
       setTp(tpRes.data);
       setReviews((rRes.data as any[]) ?? []);
-      setContactCount(cRes.count ?? 0);
+      setPendingCount(pRes.count ?? 0);
+      setAcceptedCount(aRes.count ?? 0);
       setSubjects((sRes.data as any[]) ?? []);
     })();
   }, []);
@@ -159,8 +162,27 @@ function TeacherDashboard() {
       </div>
 
       <aside className="space-y-4">
+        {pendingCount > 0 && (
+          <div className="rounded-2xl border border-primary/30 bg-primary-soft p-5">
+            <div className="flex items-center gap-3">
+              <Hourglass className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-2xl font-bold">{pendingCount}</p>
+                <p className="text-xs text-foreground/80">Pending contact requests</p>
+              </div>
+            </div>
+            <Button asChild size="sm" className="mt-3 w-full"><Link to="/requests">Review requests</Link></Button>
+          </div>
+        )}
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-          <div className="flex items-center gap-3"><Eye className="h-5 w-5 text-primary" /><div><p className="text-2xl font-bold">{contactCount}</p><p className="text-xs text-muted-foreground">Contact reveals</p></div></div>
+          <div className="flex items-center gap-3">
+            <Inbox className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-2xl font-bold">{acceptedCount}</p>
+              <p className="text-xs text-muted-foreground">Accepted connections</p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm" className="mt-3 w-full"><Link to="/requests">Open inbox</Link></Button>
         </div>
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
           <h3 className="font-semibold">Tips</h3>
@@ -177,7 +199,7 @@ function TeacherDashboard() {
 
 function LearnerDashboard() {
   const [sp, setSp] = useState<any>(null);
-  const [recentTutors, setRecentTutors] = useState<any[]>([]);
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [dueReviews, setDueReviews] = useState<any[]>([]);
 
   useEffect(() => {
@@ -188,7 +210,7 @@ function LearnerDashboard() {
         supabase.from("student_profiles").select("*").eq("user_id", u.user.id).maybeSingle(),
         supabase
           .from("contact_events")
-          .select("created_at, teacher_id, teacher_profiles!inner(user_id, profiles!inner(full_name, city, area))")
+          .select("id, status, created_at, teacher_id, teacher:profiles!contact_events_teacher_id_fkey(full_name, city, area)")
           .eq("viewer_id", u.user.id)
           .order("created_at", { ascending: false })
           .limit(10),
@@ -196,11 +218,11 @@ function LearnerDashboard() {
       setSp(spRes.data);
 
       const events = (evRes.data as any[]) ?? [];
-      setRecentTutors(events.slice(0, 5));
+      setRecentRequests(events.slice(0, 5));
 
-      // Reviews due: contact_event older than 3 days with no review yet
+      // Reviews due: accepted requests older than 3 days with no review yet
       const olderThan = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-      const candidates = events.filter((e) => new Date(e.created_at) < olderThan);
+      const candidates = events.filter((e) => e.status === "accepted" && new Date(e.created_at) < olderThan);
       const teacherIds = [...new Set(candidates.map((e) => e.teacher_id))];
       if (teacherIds.length > 0) {
         const { data: mine } = await supabase.from("reviews").select("teacher_id").eq("reviewer_id", u.user.id).in("teacher_id", teacherIds);
@@ -232,13 +254,13 @@ function LearnerDashboard() {
         {dueReviews.length > 0 && (
           <section className="rounded-2xl border border-primary/30 bg-primary-soft p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold"><MessageCircle className="h-4 w-4 text-primary" /> Share a review</h2>
-            <p className="mt-1 text-sm">It's been a few days since you reached out to these tutors. Help other families by sharing what worked.</p>
+            <p className="mt-1 text-sm">It's been a few days since these tutors accepted your contact. Help other families by sharing what worked.</p>
             <ul className="mt-3 space-y-2">
               {dueReviews.map((d) => (
                 <li key={d.teacher_id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
                   <div>
-                    <p className="font-semibold">{d.teacher_profiles?.profiles?.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{[d.teacher_profiles?.profiles?.area, d.teacher_profiles?.profiles?.city].filter(Boolean).join(", ")}</p>
+                    <p className="font-semibold">{d.teacher?.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{[d.teacher?.area, d.teacher?.city].filter(Boolean).join(", ")}</p>
                   </div>
                   <Button asChild size="sm"><Link to="/tutors/$id" params={{ id: d.teacher_id }}>Review</Link></Button>
                 </li>
@@ -248,16 +270,21 @@ function LearnerDashboard() {
         )}
 
         <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
-          <h2 className="text-lg font-semibold">Recently viewed tutors</h2>
-          {recentTutors.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">You haven't viewed any tutor contacts yet. <Link to="/tutors" className="font-semibold text-primary">Browse tutors</Link></p>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Recent contact requests</h2>
+            <Button asChild variant="outline" size="sm"><Link to="/requests">View all</Link></Button>
+          </div>
+          {recentRequests.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">You haven't sent any requests yet. <Link to="/tutors" className="font-semibold text-primary">Browse tutors</Link></p>
           ) : (
             <ul className="mt-3 space-y-2">
-              {recentTutors.map((t, i) => (
-                <li key={i} className="flex items-center justify-between rounded-xl border border-border bg-background p-3">
+              {recentRequests.map((t: any) => (
+                <li key={t.id} className="flex items-center justify-between rounded-xl border border-border bg-background p-3">
                   <div>
-                    <p className="font-semibold">{t.teacher_profiles?.profiles?.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{[t.teacher_profiles?.profiles?.area, t.teacher_profiles?.profiles?.city].filter(Boolean).join(", ")}</p>
+                    <p className="font-semibold">{t.teacher?.full_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {[t.teacher?.area, t.teacher?.city].filter(Boolean).join(", ")} · <span className="capitalize">{t.status}</span>
+                    </p>
                   </div>
                   <Button asChild variant="outline" size="sm"><Link to="/tutors/$id" params={{ id: t.teacher_id }}>View</Link></Button>
                 </li>
@@ -266,6 +293,7 @@ function LearnerDashboard() {
           )}
         </section>
       </div>
+
 
       <aside className="space-y-4">
         <Button asChild className="w-full"><Link to="/tutors"><Search className="mr-2 h-4 w-4" /> Find tutors</Link></Button>
