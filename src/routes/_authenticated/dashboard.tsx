@@ -6,7 +6,7 @@ import { AppFooter } from "@/components/site/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Star, Eye, Pencil, Search, MessageCircle, GraduationCap } from "lucide-react";
+import { Star, Inbox, Pencil, Search, MessageCircle, GraduationCap, Hourglass } from "lucide-react";
 import { fetchPrimaryRole, type AppRole, dashboardPathForRole } from "@/lib/auth-helpers";
 import { toast } from "sonner";
 
