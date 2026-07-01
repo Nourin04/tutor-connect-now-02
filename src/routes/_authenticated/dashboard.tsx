@@ -292,26 +292,8 @@ function LearnerDashboard() {
             </ul>
           )}
         </section>
-
-        <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
-          <h2 className="text-lg font-semibold">Recently viewed tutors</h2>
-          {recentTutors.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">You haven't viewed any tutor contacts yet. <Link to="/tutors" className="font-semibold text-primary">Browse tutors</Link></p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {recentTutors.map((t, i) => (
-                <li key={i} className="flex items-center justify-between rounded-xl border border-border bg-background p-3">
-                  <div>
-                    <p className="font-semibold">{t.teacher_profiles?.profiles?.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{[t.teacher_profiles?.profiles?.area, t.teacher_profiles?.profiles?.city].filter(Boolean).join(", ")}</p>
-                  </div>
-                  <Button asChild variant="outline" size="sm"><Link to="/tutors/$id" params={{ id: t.teacher_id }}>View</Link></Button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
       </div>
+
 
       <aside className="space-y-4">
         <Button asChild className="w-full"><Link to="/tutors"><Search className="mr-2 h-4 w-4" /> Find tutors</Link></Button>
