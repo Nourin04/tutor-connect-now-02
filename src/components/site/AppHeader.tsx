@@ -97,7 +97,7 @@ export function AppHeader() {
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-                <Link to="/auth">Sign in</Link>
+                <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
               </Button>
               <Button size="sm" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft">
                 <Link to="/auth" search={{ mode: "signup" }}>
