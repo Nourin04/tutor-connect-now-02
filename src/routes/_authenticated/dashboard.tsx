@@ -162,8 +162,27 @@ function TeacherDashboard() {
       </div>
 
       <aside className="space-y-4">
+        {pendingCount > 0 && (
+          <div className="rounded-2xl border border-primary/30 bg-primary-soft p-5">
+            <div className="flex items-center gap-3">
+              <Hourglass className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-2xl font-bold">{pendingCount}</p>
+                <p className="text-xs text-foreground/80">Pending contact requests</p>
+              </div>
+            </div>
+            <Button asChild size="sm" className="mt-3 w-full"><Link to="/requests">Review requests</Link></Button>
+          </div>
+        )}
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-          <div className="flex items-center gap-3"><Eye className="h-5 w-5 text-primary" /><div><p className="text-2xl font-bold">{contactCount}</p><p className="text-xs text-muted-foreground">Contact reveals</p></div></div>
+          <div className="flex items-center gap-3">
+            <Inbox className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-2xl font-bold">{acceptedCount}</p>
+              <p className="text-xs text-muted-foreground">Accepted connections</p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm" className="mt-3 w-full"><Link to="/requests">Open inbox</Link></Button>
         </div>
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
           <h3 className="font-semibold">Tips</h3>
