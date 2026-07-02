@@ -38,10 +38,15 @@ function LearnerOnboarding() {
       if (!u.user) return;
       setUserId(u.user.id);
       setRole(await fetchPrimaryRole());
-      const { data: p } = await supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle();
+      const [pRes, phoneRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle(),
+        supabase.from("user_phones").select("phone").eq("user_id", u.user.id).maybeSingle(),
+      ]);
+      const p = pRes.data;
+      const ph = phoneRes.data;
       if (p) setProfile({
         full_name: p.full_name ?? "",
-        phone: p.phone ?? "",
+        phone: ph?.phone ?? "",
         city: p.city ?? "",
         area: p.area ?? "",
         avatar_url: p.avatar_url ?? "",
@@ -60,12 +65,17 @@ function LearnerOnboarding() {
     setSaving(true);
     const { error: pErr } = await supabase.from("profiles").update({
       full_name: profile.full_name,
-      phone: profile.phone,
       city: profile.city,
       area: profile.area,
       avatar_url: profile.avatar_url || null,
     }).eq("id", userId);
     if (pErr) { setSaving(false); return toast.error(pErr.message); }
+
+    const { error: phoneErr } = await supabase.from("user_phones").upsert({
+      user_id: userId,
+      phone: profile.phone,
+    }, { onConflict: "user_id" });
+    if (phoneErr) { setSaving(false); return toast.error(phoneErr.message); }
 
     const { error: sErr } = await supabase.from("student_profiles").upsert({
       user_id: userId,

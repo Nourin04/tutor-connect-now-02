@@ -20,10 +20,12 @@ import {
 
 export function AppHeader() {
   const navigate = useNavigate();
+  const [isMounted, setIsMounted] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
 
   useEffect(() => {
+    setIsMounted(true);
     let mounted = true;
     supabase.auth.getUser().then(async ({ data }) => {
       if (!mounted) return;
@@ -62,41 +64,52 @@ export function AppHeader() {
           </a>
         </nav>
         <div className="flex items-center gap-2">
-          {email ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-full">
-                  <User className="mr-2 h-4 w-4" />
-                  <span className="hidden max-w-[140px] truncate sm:inline">{email}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Signed in as {role ?? "user"}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to={dashboardPathForRole(role)}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/tutors">
-                    <Search className="mr-2 h-4 w-4" />
-                    Find tutors
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {!isMounted ? (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
+              </Button>
+              <Button size="sm" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft">
+                <Link to="/auth" search={{ mode: "signup" }}>
+                  Get started
+                </Link>
+              </Button>
+            </>
+          ) : email ? (
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="rounded-full">
+                    <User className="mr-2 h-4 w-4" />
+                    <span className="hidden max-w-[140px] truncate sm:inline">{email}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Signed in as {role ?? "user"}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={dashboardPathForRole(role)}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/tutors">
+                      <Search className="mr-2 h-4 w-4" />
+                      Find tutors
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button size="sm" variant="outline" onClick={signOut}>
+                Logout
+              </Button>
+            </div>
           ) : (
             <>
-              <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+              <Button variant="ghost" size="sm" asChild>
                 <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
               </Button>
               <Button size="sm" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft">

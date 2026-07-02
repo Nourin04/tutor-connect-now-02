@@ -18,18 +18,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          status: string
           teacher_id: string
           viewer_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          status?: string
           teacher_id: string
           viewer_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          status?: string
           teacher_id?: string
           viewer_id?: string
         }
@@ -59,7 +62,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          phone: string
+          phone: string | null
           updated_at: string
         }
         Insert: {
@@ -70,7 +73,7 @@ export type Database = {
           email?: string
           full_name?: string
           id: string
-          phone?: string
+          phone?: string | null
           updated_at?: string
         }
         Update: {
@@ -81,7 +84,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
-          phone?: string
+          phone?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -297,7 +300,44 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_phones: {
+        Row: {
+          created_at: string
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          phone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_phones_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {

@@ -41,7 +41,12 @@ const ROLES = [
 function AuthPage() {
   const { mode, role: initialRole } = Route.useSearch();
   const navigate = useNavigate();
+  const [isMounted, setIsMounted] = useState(false);
   const [tab, setTab] = useState<"signin" | "signup">(mode);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Sync tab state with mode search param
   useEffect(() => {
@@ -50,13 +55,22 @@ function AuthPage() {
 
   // Redirect if already signed in
   useEffect(() => {
+    if (!isMounted) return;
     supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
         const role = await fetchPrimaryRole();
         navigate({ to: dashboardPathForRole(role), replace: true });
       }
     });
-  }, [navigate]);
+  }, [isMounted, navigate]);
+
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="text-muted-foreground">Loading auth...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface">
@@ -92,7 +106,7 @@ function AuthPage() {
             <SignInForm />
           </TabsContent>
           <TabsContent value="signup" className="mt-6">
-            <SignUpForm initialRole={initialRole} />
+            <SignUpForm initialRole={initialRole} setTab={setTab} />
           </TabsContent>
         </Tabs>
 
@@ -154,7 +168,7 @@ const signupSchema = z
   })
   .refine((d) => d.password === d.confirm, { path: ["confirm"], message: "Passwords don't match" });
 
-function SignUpForm({ initialRole }: { initialRole: "student" | "parent" | "teacher" }) {
+function SignUpForm({ initialRole, setTab }: { initialRole: "student" | "parent" | "teacher"; setTab: (t: "signin" | "signup") => void }) {
   const navigate = useNavigate();
   const [role, setRole] = useState<"student" | "parent" | "teacher">(initialRole);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirm: "" });
@@ -178,7 +192,7 @@ function SignUpForm({ initialRole }: { initialRole: "student" | "parent" | "teac
     }
     setErrors({});
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
@@ -195,8 +209,21 @@ function SignUpForm({ initialRole }: { initialRole: "student" | "parent" | "teac
       toast.error(error.message);
       return;
     }
-    toast.success("Account created!");
-    navigate({ to: onboardingPathForRole(role), replace: true });
+    
+    if (data.session) {
+      toast.success("Account created and signed in!");
+      navigate({ to: onboardingPathForRole(role), replace: true });
+    } else {
+      toast.success("Account created! Please check your email to confirm and log in.", {
+        duration: 8000,
+      });
+      setTab("signin");
+      navigate({
+        to: "/auth",
+        search: (prev) => ({ ...prev, mode: "signin" }),
+        replace: true,
+      });
+    }
   }
 
   return (

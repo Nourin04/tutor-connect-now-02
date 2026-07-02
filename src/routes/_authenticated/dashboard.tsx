@@ -22,17 +22,22 @@ function DashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      const r = await fetchPrimaryRole();
-      setRole(r);
-      if (r === "admin") {
-        navigate({ to: "/admin", replace: true });
-        return;
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        if (!u.user) return;
+        const r = await fetchPrimaryRole();
+        setRole(r);
+        if (r === "admin") {
+          navigate({ to: "/admin", replace: true });
+          return;
+        }
+        const { data: p } = await supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle();
+        setMe(p);
+      } catch (err) {
+        console.error("Error loading dashboard data:", err);
+      } finally {
+        setLoading(false);
       }
-      const { data: p } = await supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle();
-      setMe(p);
-      setLoading(false);
     })();
   }, [navigate]);
 
@@ -68,6 +73,61 @@ function TeacherDashboard() {
   const [contactCount, setContactCount] = useState(0);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [userId, setUserId] = useState("");
+  const [requests, setRequests] = useState<any[]>([]);
+
+  async function loadRequests(tId: string) {
+    const { data: reqData } = await supabase
+      .from("contact_events")
+      .select("id, status, created_at, viewer_id, profiles:profiles!contact_events_viewer_id_fkey(full_name, email)")
+      .eq("teacher_id", tId)
+      .order("created_at", { ascending: false });
+
+    const reqs = (reqData as any[]) ?? [];
+
+    const acceptedIds = reqs
+      .filter((r) => r.status === "accepted")
+      .map((r) => r.viewer_id);
+
+    let phonesMap: Record<string, string> = {};
+    if (acceptedIds.length > 0) {
+      const { data: phones } = await supabase
+        .from("user_phones")
+        .select("user_id, phone")
+        .in("user_id", acceptedIds);
+      (phones ?? []).forEach((p) => {
+        phonesMap[p.user_id] = p.phone;
+      });
+    }
+
+    setRequests(
+      reqs.map((r) => ({
+        ...r,
+        phone: phonesMap[r.viewer_id] || null,
+      }))
+    );
+  }
+
+  async function handleRequest(requestId: string, nextStatus: "accepted" | "declined") {
+    const { error } = await supabase
+      .from("contact_events")
+      .update({ status: nextStatus })
+      .eq("id", requestId);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success(`Request ${nextStatus}.`);
+    if (userId) {
+      loadRequests(userId);
+      const { count } = await supabase
+        .from("contact_events")
+        .select("id", { count: "exact", head: true })
+        .eq("teacher_id", userId);
+      setContactCount(count ?? 0);
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -84,6 +144,7 @@ function TeacherDashboard() {
       setReviews((rRes.data as any[]) ?? []);
       setContactCount(cRes.count ?? 0);
       setSubjects((sRes.data as any[]) ?? []);
+      loadRequests(u.user.id);
     })();
   }, []);
 
@@ -139,6 +200,36 @@ function TeacherDashboard() {
               <Switch checked={!!tp.is_active} onCheckedChange={toggleActive} />
             </div>
           )}
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
+          <h2 className="text-lg font-semibold">Contact Requests</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Students or parents who want to connect with you.</p>
+          <ul className="mt-4 space-y-3">
+            {requests.map((r) => (
+              <li key={r.id} className="rounded-xl border border-border bg-background p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-sm">{r.profiles?.full_name || "A student"}</p>
+                  <p className="text-xs text-muted-foreground">{r.profiles?.email}</p>
+                  {r.phone && <p className="text-xs font-medium text-primary mt-1">Phone: {r.phone}</p>}
+                  <p className="text-[10px] text-muted-foreground mt-1">Requested {new Date(r.created_at).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {r.status === "pending" ? (
+                    <>
+                      <Button size="sm" variant="outline" className="text-green-600 border-green-600/30 bg-green-500/5 hover:bg-green-500/10 hover:text-green-700 font-semibold" onClick={() => handleRequest(r.id, "accepted")}>Accept</Button>
+                      <Button size="sm" variant="ghost" className="text-destructive hover:bg-destructive/5 hover:text-destructive font-semibold" onClick={() => handleRequest(r.id, "declined")}>Decline</Button>
+                    </>
+                  ) : (
+                    <Badge variant={r.status === "accepted" ? "secondary" : "outline"} className={`capitalize ${r.status === "accepted" ? "bg-green-500/10 text-green-600 border-0" : "text-muted-foreground"}`}>
+                      {r.status}
+                    </Badge>
+                  )}
+                </div>
+              </li>
+            ))}
+            {requests.length === 0 && <p className="text-sm text-muted-foreground">No requests received yet.</p>}
+          </ul>
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-6 shadow-card">

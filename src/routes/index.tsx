@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrimaryRole, dashboardPathForRole, type AppRole } from "@/lib/auth-helpers";
@@ -11,6 +11,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Search,
   MapPin,
@@ -28,6 +36,9 @@ import {
   ArrowRight,
   CheckCircle2,
   MessageCircle,
+  User,
+  LogOut,
+  LayoutDashboard,
 } from "lucide-react";
 import heroTutor from "@/assets/hero-tutor.jpg";
 import studentImg from "@/assets/student-1.jpg";
@@ -75,29 +86,7 @@ function Landing() {
   );
 }
 
-/* ---------- Header ---------- */
 function Header() {
-  const [email, setEmail] = useState<string | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!mounted) return;
-      setEmail(data.user?.email ?? null);
-      if (data.user) setRole(await fetchPrimaryRole());
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
-      setEmail(s?.user?.email ?? null);
-      if (s?.user) setRole(await fetchPrimaryRole());
-      else setRole(null);
-    });
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -110,22 +99,14 @@ function Header() {
           <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
         </nav>
         <div className="flex items-center gap-2">
-          {email ? (
-            <Button size="sm" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft">
-              <Link to={dashboardPathForRole(role)}>Go to Dashboard</Link>
-            </Button>
-          ) : (
-            <>
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex" asChild>
-                <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
-              </Button>
-              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft" asChild>
-                <Link to="/auth" search={{ mode: "signup" }}>
-                  Get started
-                </Link>
-              </Button>
-            </>
-          )}
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
+          </Button>
+          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft" asChild>
+            <Link to="/auth" search={{ mode: "signup" }}>
+              Get started
+            </Link>
+          </Button>
         </div>
       </div>
     </header>

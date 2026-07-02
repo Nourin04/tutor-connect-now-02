@@ -39,7 +39,8 @@ function TutorProfilePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [me, setMe] = useState<{ id: string; roles: string[] } | null>(null);
-  const [revealed, setRevealed] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<"none" | "pending" | "accepted" | "declined">("none");
+  const [phone, setPhone] = useState<string | null>(null);
   const [hasContactEvent, setHasContactEvent] = useState(false);
   const [myReview, setMyReview] = useState<any | null>(null);
 
@@ -51,7 +52,7 @@ function TutorProfilePage() {
         supabase
           .from("teacher_profiles")
           .select(
-            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, email, phone, city, area, avatar_url), teacher_subjects(subject, level, board)"
+            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, email, city, area, avatar_url), teacher_subjects(subject, level, board)"
           )
           .eq("user_id", id)
           .maybeSingle(),
@@ -72,11 +73,22 @@ function TutorProfilePage() {
         setMe({ id: user.id, roles });
         const { data: ev } = await supabase
           .from("contact_events")
-          .select("id")
+          .select("id, status")
           .eq("viewer_id", user.id)
           .eq("teacher_id", id)
-          .limit(1);
-        if ((ev ?? []).length > 0) setHasContactEvent(true);
+          .maybeSingle();
+        if (ev) {
+          setRequestStatus(ev.status as any);
+          if (ev.status === "accepted") {
+            setHasContactEvent(true);
+            const { data: ph } = await supabase
+              .from("user_phones")
+              .select("phone")
+              .eq("user_id", id)
+              .maybeSingle();
+            if (ph) setPhone(ph.phone);
+          }
+        }
         const mine = (rRes.data as any[])?.find((r) => r.reviewer_id === user.id);
         if (mine) setMyReview(mine);
       }
@@ -100,9 +112,8 @@ function TutorProfilePage() {
       toast.error(error.message);
       return;
     }
-    setRevealed(true);
-    setHasContactEvent(true);
-    toast.success("Contact details revealed.");
+    setRequestStatus("pending");
+    toast.success("Contact request sent to the tutor.");
   }
 
   if (loading) {
@@ -267,14 +278,49 @@ function TutorProfilePage() {
               </p>
 
               <div className="mt-5">
-                {!revealed && !hasContactEvent ? (
-                  <Button className="w-full" onClick={revealContact}>
-                    <Eye className="mr-2 h-4 w-4" /> Reveal contact
+                {!me ? (
+                  <Button asChild className="w-full">
+                    <Link to="/auth">Sign in to contact</Link>
                   </Button>
                 ) : (
-                  <div className="space-y-2 rounded-xl border border-border bg-surface p-3 text-sm">
-                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> <a className="hover:underline" href={`tel:${tutor.profiles?.phone}`}>{tutor.profiles?.phone || "—"}</a></div>
-                    <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> <a className="break-all hover:underline" href={`mailto:${tutor.profiles?.email}`}>{tutor.profiles?.email}</a></div>
+                  <div className="space-y-3">
+                    <div className="space-y-2.5 rounded-xl border border-border bg-surface p-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-primary" />
+                        <a className="break-all hover:underline" href={`mailto:${tutor.profiles?.email}`}>
+                          {tutor.profiles?.email}
+                        </a>
+                      </div>
+                      {requestStatus === "accepted" && (
+                        <div className="flex items-center gap-2 border-t border-border/50 pt-2.5">
+                          <Phone className="h-4 w-4 text-primary" />
+                          <a className="hover:underline" href={`tel:${phone}`}>
+                            {phone || "—"}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    {requestStatus === "none" && (
+                      <Button className="w-full" onClick={revealContact}>
+                        <Eye className="mr-2 h-4 w-4" /> Request phone number
+                      </Button>
+                    )}
+                    {requestStatus === "pending" && (
+                      <Button className="w-full" disabled variant="secondary">
+                        Request Pending Approval
+                      </Button>
+                    )}
+                    {requestStatus === "declined" && (
+                      <Button className="w-full" disabled variant="destructive">
+                        Request Declined
+                      </Button>
+                    )}
+                    {requestStatus === "accepted" && (
+                      <div className="rounded-xl bg-green-500/10 p-2 text-center text-xs font-semibold text-green-600 dark:text-green-400">
+                        ✓ Request accepted
+                      </div>
+                    )}
                   </div>
                 )}
                 <p className="mt-3 text-xs text-muted-foreground">

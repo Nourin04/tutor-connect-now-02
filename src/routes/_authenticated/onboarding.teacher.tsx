@@ -52,11 +52,16 @@ function TeacherOnboarding() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       setUserId(u.user.id);
-      const { data: p } = await supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle();
+      const [pRes, phoneRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle(),
+        supabase.from("user_phones").select("phone").eq("user_id", u.user.id).maybeSingle(),
+      ]);
+      const p = pRes.data;
+      const ph = phoneRes.data;
       if (p) setS1({
         full_name: p.full_name ?? "",
         email: p.email ?? "",
-        phone: p.phone ?? "",
+        phone: ph?.phone ?? "",
         city: p.city ?? "",
         area: p.area ?? "",
         avatar_url: p.avatar_url ?? "",
@@ -89,14 +94,20 @@ function TeacherOnboarding() {
   }, []);
 
   async function savePersonal() {
-    const { error } = await supabase.from("profiles").update({
+    const { error: pErr } = await supabase.from("profiles").update({
       full_name: s1.full_name,
-      phone: s1.phone,
       city: s1.city,
       area: s1.area,
       avatar_url: s1.avatar_url || null,
     }).eq("id", userId);
-    if (error) return toast.error(error.message);
+    if (pErr) return toast.error(pErr.message);
+
+    const { error: phoneErr } = await supabase.from("user_phones").upsert({
+      user_id: userId,
+      phone: s1.phone,
+    }, { onConflict: "user_id" });
+    if (phoneErr) return toast.error(phoneErr.message);
+
     await ensureTeacherProfile(0);
     toast.success("Personal info saved.");
     setStep(1);
