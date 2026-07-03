@@ -159,12 +159,48 @@ function UsersTable() {
   const [rows, setRows] = useState<any[]>([]);
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      // 1. Fetch profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, full_name, email, city, created_at, user_roles(role)")
+        .select("id, full_name, email, city, created_at")
         .order("created_at", { ascending: false })
         .limit(100);
-      setRows((data as any[]) ?? []);
+
+      if (profilesError) {
+        console.error("Error loading profiles:", profilesError.message);
+        toast.error(`Error loading profiles: ${profilesError.message}`);
+        setRows([]);
+        return;
+      }
+
+      if (!profilesData || profilesData.length === 0) {
+        setRows([]);
+        return;
+      }
+
+      // 2. Fetch roles for these profiles
+      const profileIds = profilesData.map((p) => p.id);
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", profileIds);
+
+      if (rolesError) {
+        console.error("Error loading user roles:", rolesError.message);
+      }
+
+      // 3. Map roles to their respective profiles
+      const combined = profilesData.map((profile) => {
+        const roles = (rolesData ?? [])
+          .filter((r) => r.user_id === profile.id)
+          .map((r) => ({ role: r.role }));
+        return {
+          ...profile,
+          user_roles: roles,
+        };
+      });
+
+      setRows(combined);
     })();
   }, []);
   return (
