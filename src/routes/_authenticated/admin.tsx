@@ -100,7 +100,7 @@ function AdminStats() {
       {cards.map((c) => (
         <div key={c.label} className="rounded-2xl border border-border bg-card p-4 shadow-card">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{c.label}</p>
-          <p className="mt-1 text-2xl font-bold">{c.value}</p>
+          <p className="mt-1 text-2xl font-bold font-display">{c.value}</p>
         </div>
       ))}
     </div>

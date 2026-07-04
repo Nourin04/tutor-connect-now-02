@@ -71,13 +71,11 @@ function Landing() {
       <Header />
       <main>
         <Hero />
-        <TrustBar />
         <ValueProps />
         <HowItWorks />
         <PopularSubjects />
         <FeaturedTutors />
         <ForTeachers />
-        <Testimonials />
         <FAQ />
         <CTASection />
       </main>
@@ -202,6 +200,17 @@ function Logo() {
 
 /* ---------- Hero ---------- */
 function Hero() {
+  const navigate = useNavigate();
+  const [searchCity, setSearchCity] = useState("");
+
+  function handleSearch() {
+    if (searchCity.trim()) {
+      navigate({ to: "/tutors", search: { city: searchCity.trim() } as any });
+    } else {
+      navigate({ to: "/tutors" });
+    }
+  }
+
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
@@ -210,37 +219,34 @@ function Hero() {
       <div className="mx-auto max-w-7xl px-4 pt-16 pb-24 sm:px-6 lg:px-8 lg:pt-24 lg:pb-32">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div className="text-center lg:text-left">
-            <Badge className="bg-primary-soft text-primary border-0 px-3 py-1 rounded-full text-xs font-semibold">
-              <Sparkles className="mr-1 h-3 w-3" /> Trusted by 10,000+ families
-            </Badge>
             <h1 className="mt-5 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
               Find the right tutor,
               <br />
               <span className="text-primary">right around the corner.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
-              Discover trusted local tutors by subject, class, and location. Compare ratings,
-              fees, and availability — then connect directly. No middlemen.
+              Discover local tutors in your area. Compare
+              fees and availability — then connect directly. No middlemen.
             </p>
 
-            <div className="mt-8 rounded-2xl border border-border bg-card p-3 shadow-card lg:max-w-lg">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
+            <div className="mt-8 rounded-2xl border border-border bg-card p-2 shadow-card lg:max-w-lg">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-1 items-center gap-2.5 pl-2">
+                  <MapPin className="h-5 w-5 text-primary shrink-0" />
                   <Input
-                    placeholder="Subject e.g. Maths, Physics"
-                    className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                    placeholder="Enter your area or city"
+                    value={searchCity}
+                    onChange={(e) => setSearchCity(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSearch();
+                    }}
+                    className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 w-full text-base placeholder:text-muted-foreground/50 h-10"
                   />
                 </div>
-                <div className="hidden h-8 w-px bg-border sm:block" />
-                <div className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Your area or city"
-                    className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
-                  />
-                </div>
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl">
+                <Button 
+                  onClick={handleSearch}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-5 h-10 font-medium shrink-0"
+                >
                   Search
                 </Button>
               </div>
@@ -248,7 +254,7 @@ function Hero() {
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground lg:justify-start">
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> Free to browse</span>
-              <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> Verified reviews</span>
+              <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> Direct contact</span>
               <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> Online & in-person</span>
             </div>
           </div>
@@ -265,16 +271,6 @@ function Hero() {
             </div>
 
             {/* Floating cards */}
-            <div className="absolute -left-4 top-8 hidden rounded-2xl border border-border bg-card p-3 shadow-card sm:flex sm:items-center sm:gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                <Star className="h-5 w-5 fill-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold leading-none">4.9 / 5</p>
-                <p className="text-xs text-muted-foreground">From 2,400+ reviews</p>
-              </div>
-            </div>
-
             <div className="absolute -bottom-4 -right-2 hidden rounded-2xl border border-border bg-card p-3 shadow-card sm:block">
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-2">
@@ -283,7 +279,7 @@ function Hero() {
                   <img src={parentImg} alt="" width={32} height={32} className="h-8 w-8 rounded-full border-2 border-card object-cover" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold leading-none">12K+ tutors</p>
+                  <p className="text-sm font-semibold leading-none font-display">Tutors</p>
                   <p className="text-xs text-muted-foreground">across India</p>
                 </div>
               </div>
@@ -321,8 +317,8 @@ function ValueProps() {
   const items = [
     {
       icon: ShieldCheck,
-      title: "Vetted, reviewed tutors",
-      desc: "Every profile shows real ratings, reviews, and qualifications so you can choose with confidence.",
+      title: "Verified profiles",
+      desc: "Every profile displays verified qualifications, subject expertise, and experience so you can choose with confidence.",
     },
     {
       icon: MapPin,
@@ -339,7 +335,6 @@ function ValueProps() {
     <section className="py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <Badge className="bg-primary-soft text-primary border-0">Why TutorConnect</Badge>
           <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
             Designed for learning that actually <span className="text-primary">sticks</span>.
           </h2>
@@ -379,7 +374,7 @@ function HowItWorks() {
     {
       n: "02",
       title: "Compare local tutors",
-      desc: "Browse profiles with qualifications, fees, availability and reviews from real families.",
+      desc: "Browse profiles with qualifications, fees, teaching modes, and availability.",
     },
     {
       n: "03",
@@ -392,7 +387,6 @@ function HowItWorks() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid items-end gap-8 lg:grid-cols-2">
           <div>
-            <Badge className="bg-primary-soft text-primary border-0">How it works</Badge>
             <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
               From "I need a tutor" to your first lesson — in minutes.
             </h2>
@@ -409,7 +403,7 @@ function HowItWorks() {
               key={s.n}
               className="relative rounded-2xl border border-border bg-card p-7 shadow-card"
             >
-              <span className="text-5xl font-extrabold text-primary/15">{s.n}</span>
+              <span className="text-5xl font-extrabold text-primary/15 font-display">{s.n}</span>
               <h3 className="mt-2 text-lg font-semibold">{s.title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
               {i < steps.length - 1 && (
@@ -417,12 +411,6 @@ function HowItWorks() {
               )}
             </div>
           ))}
-        </div>
-
-        <div className="mt-12 grid gap-6 rounded-3xl border border-border bg-card p-6 sm:grid-cols-3 sm:p-10">
-          <Stat value="12K+" label="Active tutors" />
-          <Stat value="200+" label="Subjects & exams" />
-          <Stat value="4.9/5" label="Avg. tutor rating" />
         </div>
       </div>
     </section>
@@ -432,7 +420,7 @@ function HowItWorks() {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center sm:text-left">
-      <p className="text-4xl font-extrabold tracking-tight text-primary">{value}</p>
+      <p className="text-4xl font-extrabold tracking-tight text-primary font-display">{value}</p>
       <p className="mt-1 text-sm text-muted-foreground">{label}</p>
     </div>
   );
@@ -441,19 +429,18 @@ function Stat({ value, label }: { value: string; label: string }) {
 /* ---------- Popular subjects ---------- */
 function PopularSubjects() {
   const subjects = [
-    { icon: Calculator, name: "Mathematics", count: "1,240 tutors" },
-    { icon: FlaskConical, name: "Science", count: "980 tutors" },
-    { icon: Globe2, name: "Languages", count: "760 tutors" },
-    { icon: Code2, name: "Coding & CS", count: "420 tutors" },
-    { icon: BookOpen, name: "English & Lit", count: "1,100 tutors" },
-    { icon: Music2, name: "Music & Arts", count: "310 tutors" },
+    { icon: Calculator, name: "Mathematics", count: "Primary & secondary classes" },
+    { icon: FlaskConical, name: "Science", count: "Physics, chemistry & biology" },
+    { icon: Globe2, name: "Languages", count: "English, French, Hindi & more" },
+    { icon: Code2, name: "Coding & CS", count: "Python, web dev & algorithms" },
+    { icon: BookOpen, name: "English & Lit", count: "Literature & grammar" },
+    { icon: Music2, name: "Music & Arts", count: "Instrument & vocal training" },
   ];
   return (
     <section id="subjects" className="py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Badge className="bg-primary-soft text-primary border-0">Subjects</Badge>
             <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
               Explore popular <span className="text-primary">subjects</span>
             </h2>
@@ -494,8 +481,6 @@ function FeaturedTutors() {
       name: "Arjun Mehta",
       subject: "Physics & Maths • Class 11-12",
       area: "Koramangala, Bengaluru",
-      rating: 4.9,
-      reviews: 128,
       fee: "₹800/hr",
     },
     {
@@ -503,8 +488,6 @@ function FeaturedTutors() {
       name: "Priya Iyer",
       subject: "English & Literature • Class 6-10",
       area: "Indiranagar, Bengaluru",
-      rating: 4.8,
-      reviews: 96,
       fee: "₹600/hr",
     },
     {
@@ -512,8 +495,6 @@ function FeaturedTutors() {
       name: "Rohan Verma",
       subject: "Coding & Computer Science",
       area: "Online",
-      rating: 5.0,
-      reviews: 72,
       fee: "₹1,000/hr",
     },
   ];
@@ -522,9 +503,8 @@ function FeaturedTutors() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Badge className="bg-primary-soft text-primary border-0">Featured tutors</Badge>
             <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-              Meet a few of our <span className="text-primary">top-rated</span> tutors
+              Meet a few of our <span className="text-primary">featured</span> tutors
             </h2>
           </div>
           <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
@@ -555,11 +535,6 @@ function FeaturedTutors() {
                     <h3 className="font-semibold">{t.name}</h3>
                     <p className="mt-0.5 text-sm text-muted-foreground">{t.subject}</p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1 text-sm font-semibold">
-                    <Star className="h-4 w-4 fill-primary text-primary" />
-                    {t.rating}
-                    <span className="font-normal text-muted-foreground">({t.reviews})</span>
-                  </div>
                 </div>
                 <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <MapPin className="h-3.5 w-3.5" />
@@ -585,7 +560,7 @@ function ForTeachers() {
   const benefits = [
     "Create a rich profile in minutes — no approvals, no fees",
     "Reach families actively searching in your area",
-    "Showcase qualifications, ratings, and availability",
+    "Showcase qualifications, subjects, and availability",
     "Manage everything from one simple dashboard",
   ];
   return (
@@ -594,9 +569,6 @@ function ForTeachers() {
         <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-[oklch(0.45_0.22_270)] text-primary-foreground">
           <div className="grid items-center gap-10 p-8 sm:p-12 lg:grid-cols-2 lg:p-16">
             <div>
-              <Badge className="border-0 bg-white/15 text-white backdrop-blur">
-                For teachers & tutors
-              </Badge>
               <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
                 Grow your tuition practice — without the noise.
               </h2>
@@ -734,8 +706,8 @@ function FAQ() {
       a: "Yes — browsing tutors, viewing profiles, and contacting them is completely free for parents and students. Tutors can also list their profiles at no cost during our MVP.",
     },
     {
-      q: "How do I know the tutors are trustworthy?",
-      a: "Every tutor profile shows qualifications, experience, and verified reviews from real families. You can filter by rating, see past student feedback, and reach out only when you're confident.",
+      q: "How do I evaluate a tutor?",
+      a: "Every tutor profile displays detailed qualifications, educational background, years of teaching experience, fee structures, and specialized subjects so you can make an informed decision.",
     },
     {
       q: "Do you support online and in-person tutoring?",
@@ -754,7 +726,6 @@ function FAQ() {
     <section id="faq" className="py-20 sm:py-28">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <Badge className="bg-primary-soft text-primary border-0">FAQ</Badge>
           <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
             Common questions
           </h2>

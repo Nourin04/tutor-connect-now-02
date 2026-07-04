@@ -70,6 +70,14 @@ function TutorsPage() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const set = <K extends keyof FilterState>(k: K, v: FilterState[K]) => setFilters((p) => ({ ...p, [k]: v }));
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const city = params.get("city") || "";
+    if (city) {
+      set("city", city);
+    }
+  }, []);
+
   const query = useQuery({
     queryKey: ["tutors", filters],
     queryFn: async () => {
@@ -240,13 +248,13 @@ function TutorsPage() {
                           <h3 className="text-lg font-semibold">{t.profiles?.full_name}</h3>
                           <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                             <MapPin className="h-3.5 w-3.5" />
-                            {[t.profiles?.area, t.profiles?.city].filter(Boolean).join(", ") || "Location not set"} · {t.years_experience}+ yrs exp
+                            {[t.profiles?.area, t.profiles?.city].filter(Boolean).join(", ") || "Location not set"} · <span className="font-display font-semibold">{t.years_experience}+</span> yrs exp
                           </p>
                         </div>
                         <div className="flex items-center gap-1 text-sm font-semibold">
                           <Star className="h-4 w-4 fill-primary text-primary" />
-                          {Number(t.rating_avg).toFixed(1)}
-                          <span className="font-normal text-muted-foreground">({t.rating_count})</span>
+                          <span className="font-display">{Number(t.rating_avg).toFixed(1)}</span>
+                          <span className="font-normal text-muted-foreground font-display">({t.rating_count})</span>
                         </div>
                       </div>
                       {t.bio && <p className="mt-2 line-clamp-2 text-sm text-foreground/80">{t.bio}</p>}
@@ -259,7 +267,7 @@ function TutorsPage() {
                       </div>
                       <div className="mt-3 flex items-center justify-between text-sm">
                         <span className="text-muted-foreground capitalize">{t.mode === "both" ? "Online & in-person" : t.mode}</span>
-                        <span className="font-semibold">
+                        <span className="font-semibold font-display">
                           {t.fee_min === t.fee_max ? `₹${t.fee_min}/hr` : `₹${t.fee_min}–${t.fee_max}/hr`}
                         </span>
                       </div>

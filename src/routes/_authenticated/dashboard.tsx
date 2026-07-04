@@ -251,7 +251,7 @@ function TeacherDashboard() {
 
       <aside className="space-y-4">
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
-          <div className="flex items-center gap-3"><Eye className="h-5 w-5 text-primary" /><div><p className="text-2xl font-bold">{contactCount}</p><p className="text-xs text-muted-foreground">Contact reveals</p></div></div>
+          <div className="flex items-center gap-3"><Eye className="h-5 w-5 text-primary" /><div><p className="text-2xl font-bold font-display">{contactCount}</p><p className="text-xs text-muted-foreground">Contact reveals</p></div></div>
         </div>
         <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
           <h3 className="font-semibold">Tips</h3>
@@ -378,7 +378,7 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
   return (
     <div className="rounded-xl border border-border bg-background p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-bold">{value}</p>
+      <p className="mt-1 text-lg font-bold font-display">{value}</p>
       {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
     </div>
   );
