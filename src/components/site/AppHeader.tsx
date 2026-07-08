@@ -52,24 +52,13 @@ export function AppHeader() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Brand />
-        <nav className="hidden items-center gap-7 md:flex">
-          <Link to="/tutors" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-            Find tutors
-          </Link>
-          <a href="/#teachers" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-            For teachers
-          </a>
-          <a href="/#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-            FAQ
-          </a>
-        </nav>
         <div className="flex items-center gap-2">
           {!isMounted ? (
             <>
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
-              </Button>
-              <Button size="sm" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft">
+              <Link to="/auth" search={{ mode: "signin" }} className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all">
+                Sign in
+              </Link>
+              <Button size="sm" asChild className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft">
                 <Link to="/auth" search={{ mode: "signup" }}>
                   Get started
                 </Link>
@@ -79,7 +68,7 @@ export function AppHeader() {
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-full">
+                  <Button variant="outline" size="sm" className="rounded-full font-semibold">
                     <User className="mr-2 h-4 w-4" />
                     <span className="hidden max-w-[140px] truncate sm:inline">{email}</span>
                   </Button>
@@ -103,16 +92,16 @@ export function AppHeader() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button size="sm" variant="outline" onClick={signOut}>
+              <Button size="sm" variant="outline" onClick={signOut} className="rounded-full font-semibold">
                 Logout
               </Button>
             </div>
           ) : (
             <>
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
-              </Button>
-              <Button size="sm" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft">
+              <Link to="/auth" search={{ mode: "signin" }} className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all">
+                Sign in
+              </Link>
+              <Button size="sm" asChild className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft">
                 <Link to="/auth" search={{ mode: "signup" }}>
                   Get started
                 </Link>

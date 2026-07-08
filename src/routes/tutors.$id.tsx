@@ -24,7 +24,7 @@ import { fetchMyRoles } from "@/lib/auth-helpers";
 export const Route = createFileRoute("/tutors/$id")({
   head: () => ({
     meta: [
-      { title: "Tutor profile — TutorConnect" },
+      { title: "Tutor Profile | TutorConnect" },
       { name: "description", content: "View tutor qualifications, subjects, availability, fees, and reviews." },
     ],
   }),
@@ -183,8 +183,8 @@ function TutorProfilePage() {
 
             {/* Qualifications */}
             <Section title="Qualifications" icon={GraduationCap}>
-              <Row label="Highest degree" value={tutor.highest_degree || "—"} />
-              <Row label="University / Institution" value={tutor.university || "—"} />
+              <Row label="Highest degree" value={tutor.highest_degree || "-"} />
+              <Row label="University / Institution" value={tutor.university || "-"} />
               <Row label="Years of experience" value={<span><span className="font-display font-semibold">{tutor.years_experience}</span> year{tutor.years_experience === 1 ? "" : "s"}</span>} />
               {(tutor.certifications ?? []).length > 0 && (
                 <Row label="Certifications" value={tutor.certifications.join(", ")} />
@@ -214,10 +214,10 @@ function TutorProfilePage() {
 
             {/* Availability */}
             <Section title="Availability" icon={Clock}>
-              <Row label="Days" value={(tutor.available_days ?? []).join(", ") || "—"} />
-              <Row label="Time slots" value={(tutor.time_slots ?? []).join(", ") || "—"} />
+              <Row label="Days" value={(tutor.available_days ?? []).join(", ") || "-"} />
+              <Row label="Time slots" value={(tutor.time_slots ?? []).join(", ") || "-"} />
               <Row label="Mode" value={tutor.mode === "both" ? "Online & in-person" : tutor.mode} />
-              <Row label="Languages" value={(tutor.languages ?? []).join(", ") || "—"} icon={Languages} />
+              <Row label="Languages" value={(tutor.languages ?? []).join(", ") || "-"} icon={Languages} />
             </Section>
 
             {/* Reviews */}
@@ -263,7 +263,7 @@ function TutorProfilePage() {
                     <p className="mt-2 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
                   </li>
                 ))}
-                {reviews.length === 0 && <p className="text-sm text-muted-foreground">No reviews yet — be the first!</p>}
+                {reviews.length === 0 && <p className="text-sm text-muted-foreground">No reviews yet. Be the first to share your experience!</p>}
               </ul>
             </section>
           </div>
@@ -295,7 +295,7 @@ function TutorProfilePage() {
                         <div className="flex items-center gap-2 border-t border-border/50 pt-2.5">
                           <Phone className="h-4 w-4 text-primary" />
                           <a className="hover:underline" href={`tel:${phone}`}>
-                            {phone || "—"}
+                            {phone || "-"}
                           </a>
                         </div>
                       )}

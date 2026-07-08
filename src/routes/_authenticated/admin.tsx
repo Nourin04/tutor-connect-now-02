@@ -142,7 +142,7 @@ function TutorsTable() {
             <tr key={r.user_id} className="border-t border-border">
               <Td>{r.profiles?.full_name}</Td>
               <Td className="text-muted-foreground">{r.profiles?.email}</Td>
-              <Td>{r.profiles?.city || "—"}</Td>
+              <Td>{r.profiles?.city || "-"}</Td>
               <Td><Star className="mr-1 inline h-3 w-3 fill-primary text-primary" />{Number(r.rating_avg).toFixed(1)} ({r.rating_count})</Td>
               <Td>₹{r.fee_min}–{r.fee_max}</Td>
               <Td>{r.is_active ? <Badge className="bg-primary-soft text-primary border-0">Active</Badge> : <Badge variant="secondary">Hidden</Badge>}</Td>
@@ -212,10 +212,10 @@ function UsersTable() {
         <tbody>
           {rows.map((r) => (
             <tr key={r.id} className="border-t border-border">
-              <Td>{r.full_name || "—"}</Td>
+              <Td>{r.full_name || "-"}</Td>
               <Td className="text-muted-foreground">{r.email}</Td>
               <Td>{(r.user_roles ?? []).map((x: any) => <Badge key={x.role} variant="secondary" className="mr-1 capitalize">{x.role}</Badge>)}</Td>
-              <Td>{r.city || "—"}</Td>
+              <Td>{r.city || "-"}</Td>
               <Td className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</Td>
             </tr>
           ))}
@@ -254,9 +254,9 @@ function ReviewsTable() {
           {rows.map((r) => (
             <tr key={r.id} className="border-t border-border align-top">
               <Td>{r.teacher_profiles?.profiles?.full_name}</Td>
-              <Td>{r.reviewer?.full_name ?? "—"}</Td>
+              <Td>{r.reviewer?.full_name ?? "-"}</Td>
               <Td>{r.rating} ★</Td>
-              <Td className="max-w-md text-muted-foreground">{r.comment || "—"}</Td>
+              <Td className="max-w-md text-muted-foreground">{r.comment || "-"}</Td>
               <Td className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</Td>
               <Td><Button size="sm" variant="outline" onClick={() => remove(r.id)}><Trash2 className="mr-1 h-3 w-3" /> Remove</Button></Td>
             </tr>

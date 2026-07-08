@@ -24,7 +24,7 @@ export const Route = createFileRoute("/auth")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
-      { title: "Sign in or sign up — TutorConnect" },
+      { title: "Sign In / Sign Up | TutorConnect" },
       { name: "description", content: "Create your TutorConnect account as a student, parent, or teacher." },
     ],
   }),
@@ -62,20 +62,20 @@ function AuthPage() {
 
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-muted-foreground">Loading auth...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md flex justify-center mb-6">
-        <Brand />
-      </div>
+    <div className="min-h-screen w-full flex bg-white transition-colors duration-300">
+      {/* Left side: Solid brand blue background */}
+      <div className="hidden md:block md:w-[45%] bg-[#4665FF] shrink-0" />
 
-      <div className={`sm:mx-auto sm:w-full transition-all duration-500 ease-in-out ${tab === "signup" && step === "choose-role" ? "sm:max-w-[750px]" : "sm:max-w-[400px]"}`}>
-        <div className="bg-background py-8 px-4 sm:px-6">
+      {/* Right side: Center-aligned Auth Form */}
+      <div className="flex-1 md:w-[55%] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className={`w-full mx-auto transition-all duration-500 ease-in-out ${tab === "signup" && step === "choose-role" ? "max-w-[750px]" : "max-w-[400px]"}`}>
           {tab === "signin" ? (
             <SignInForm setTab={setTab} />
           ) : step === "choose-role" ? (
@@ -151,13 +151,13 @@ function SignInForm({ setTab }: { setTab: (t: "signin" | "signup") => void }) {
 
   return (
     <div className="w-full space-y-6">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground font-display">Sign in</h2>
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold tracking-tight text-[#1A1A1A] font-display">Sign in</h2>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="si-email" className="text-sm font-medium text-foreground">
+          <Label htmlFor="si-email" className="text-sm font-semibold text-[#1A1A1A]">
             Email address <span className="text-rose-500">*</span>
           </Label>
           <Input
@@ -168,12 +168,12 @@ function SignInForm({ setTab }: { setTab: (t: "signin" | "signup") => void }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
-            className="w-full h-11 px-4 rounded-xl border border-input bg-muted/20 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all placeholder:text-muted-foreground/60"
+            className="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="si-password" className="text-sm font-medium text-foreground">
+          <Label htmlFor="si-password" className="text-sm font-semibold text-[#1A1A1A]">
             Password <span className="text-rose-500">*</span>
           </Label>
           <Input
@@ -183,11 +183,11 @@ function SignInForm({ setTab }: { setTab: (t: "signin" | "signup") => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
-            className="w-full h-11 px-4 rounded-xl border border-input bg-muted/20 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all"
+            className="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
           />
         </div>
 
-        <Button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 font-medium transition-all shadow-sm">
+        <Button type="submit" disabled={loading} className="w-full h-12 rounded-full bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm !mt-6">
           {loading ? "Signing in…" : "Sign in"}
         </Button>
       </form>
@@ -196,16 +196,16 @@ function SignInForm({ setTab }: { setTab: (t: "signin" | "signup") => void }) {
         <a
           href="#"
           onClick={handleForgotPassword}
-          className="text-sm font-medium text-primary hover:underline transition-colors"
+          className="text-sm font-medium text-[#4665FF] hover:underline transition-colors"
         >
           Forgot your password?
         </a>
       </div>
 
       <div className="relative flex py-2 items-center">
-        <div className="flex-grow border-t border-border"></div>
-        <span className="flex-shrink mx-4 text-xs text-muted-foreground bg-background">or</span>
-        <div className="flex-grow border-t border-border"></div>
+        <div className="flex-grow border-t border-[#E2E8F0]"></div>
+        <span className="flex-shrink mx-4 text-xs text-muted-foreground bg-white">or</span>
+        <div className="flex-grow border-t border-[#E2E8F0]"></div>
       </div>
 
       <Button
@@ -213,7 +213,7 @@ function SignInForm({ setTab }: { setTab: (t: "signin" | "signup") => void }) {
         variant="outline"
         onClick={handleGoogleSignIn}
         disabled={loading}
-        className="w-full h-11 rounded-xl border border-border bg-muted/10 hover:bg-muted/30 text-foreground font-medium flex items-center justify-center gap-2.5 transition-all"
+        className="w-full h-12 rounded-full border border-[#E2E8F0] bg-white hover:bg-slate-50 text-[#1A1A1A] font-medium flex items-center justify-center gap-2.5 transition-all shadow-sm"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24">
           <path
@@ -247,7 +247,7 @@ function SignInForm({ setTab }: { setTab: (t: "signin" | "signup") => void }) {
               replace: true,
             });
           }}
-          className="font-semibold text-primary hover:underline ml-1"
+          className="font-semibold text-[#4665FF] hover:underline ml-1"
         >
           Create an account
         </button>
@@ -260,7 +260,7 @@ const signupSchema = z
   .object({
     fullName: z.string().trim().min(2, "Enter your full name").max(80),
     email: z.string().trim().email("Invalid email").max(255),
-    phone: z.string().trim().min(7, "Enter a valid phone number").max(20),
+    phone: z.string().trim().refine((val) => val === "" || (val.length >= 7 && val.length <= 20), "Enter a valid phone number"),
     password: z.string().min(8, "At least 8 characters").max(72),
     confirm: z.string(),
     role: z.enum(["student", "parent", "teacher"]),
@@ -305,13 +305,13 @@ function SignUpForm({
 
   return (
     <div className="w-full space-y-6">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground font-display">Create your account</h2>
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold tracking-tight text-[#1A1A1A] font-display">Create your account</h2>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-1.5 text-left">
-          <Label htmlFor="su-name" className="text-sm font-medium text-foreground">
+          <Label htmlFor="su-name" className="text-sm font-semibold text-[#1A1A1A]">
             Name <span className="text-rose-500">*</span>
           </Label>
           <Input
@@ -319,13 +319,13 @@ function SignUpForm({
             value={form.fullName}
             onChange={(e) => setField("fullName", e.target.value)}
             required
-            className="w-full h-11 px-4 rounded-xl border border-input bg-muted/20 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all"
+            className="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
           />
           {errors.fullName && <p className="text-xs text-destructive mt-1">{errors.fullName}</p>}
         </div>
         
         <div className="space-y-1.5 text-left">
-          <Label htmlFor="su-email" className="text-sm font-medium text-foreground">
+          <Label htmlFor="su-email" className="text-sm font-semibold text-[#1A1A1A]">
             Email address <span className="text-rose-500">*</span>
           </Label>
           <Input
@@ -336,13 +336,13 @@ function SignUpForm({
             onChange={(e) => setField("email", e.target.value)}
             required
             autoComplete="email"
-            className="w-full h-11 px-4 rounded-xl border border-input bg-muted/20 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all placeholder:text-muted-foreground/60"
+            className="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
           />
           {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
         </div>
 
         <div className="space-y-1.5 text-left">
-          <Label htmlFor="su-phone" className="text-sm font-medium text-foreground">
+          <Label htmlFor="su-phone" className="text-sm font-semibold text-[#1A1A1A]">
             Phone Number
           </Label>
           <Input
@@ -351,31 +351,29 @@ function SignUpForm({
             placeholder="+91 9876543210"
             value={form.phone}
             onChange={(e) => setField("phone", e.target.value)}
-            required
-            className="w-full h-11 px-4 rounded-xl border border-input bg-muted/20 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all placeholder:text-muted-foreground/60"
+            className="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
           />
           {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
         </div>
 
         <div className="space-y-1.5 text-left">
-          <Label htmlFor="su-pw" className="text-sm font-medium text-foreground">
+          <Label htmlFor="su-pw" className="text-sm font-semibold text-[#1A1A1A]">
             Password <span className="text-rose-500">*</span>
           </Label>
           <div className="relative flex items-center">
             <Input
               id="su-pw"
               type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
               value={form.password}
               onChange={(e) => setField("password", e.target.value)}
               required
               autoComplete="new-password"
-              className="w-full h-11 pl-4 pr-10 rounded-xl border border-input bg-muted/20 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all placeholder:text-muted-foreground/40"
+              className="w-full h-12 pl-4 pr-12 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/40"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-4 text-muted-foreground hover:text-foreground transition-colors"
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -388,24 +386,23 @@ function SignUpForm({
         </div>
 
         <div className="space-y-1.5 text-left">
-          <Label htmlFor="su-pw2" className="text-sm font-medium text-foreground">
+          <Label htmlFor="su-pw2" className="text-sm font-semibold text-[#1A1A1A]">
             Confirm password <span className="text-rose-500">*</span>
           </Label>
           <div className="relative flex items-center">
             <Input
               id="su-pw2"
               type={showConfirmPassword ? "text" : "password"}
-              placeholder="••••••••"
               value={form.confirm}
               onChange={(e) => setField("confirm", e.target.value)}
               required
               autoComplete="new-password"
-              className="w-full h-11 pl-4 pr-10 rounded-xl border border-input bg-muted/20 focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary transition-all placeholder:text-muted-foreground/40"
+              className="w-full h-12 pl-4 pr-12 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/40"
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-4 text-muted-foreground hover:text-foreground transition-colors"
             >
               {showConfirmPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -417,15 +414,15 @@ function SignUpForm({
           {errors.confirm && <p className="text-xs text-destructive mt-1">{errors.confirm}</p>}
         </div>
 
-        <Button type="submit" className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/95 font-medium transition-all shadow-sm !mt-6">
+        <Button type="submit" className="w-full h-12 rounded-full bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm !mt-6">
           Create account
         </Button>
       </form>
 
       <div className="relative flex py-2 items-center">
-        <div className="flex-grow border-t border-border"></div>
-        <span className="flex-shrink mx-4 text-xs text-muted-foreground bg-background">or</span>
-        <div className="flex-grow border-t border-border"></div>
+        <div className="flex-grow border-t border-[#E2E8F0]"></div>
+        <span className="flex-shrink mx-4 text-xs text-muted-foreground bg-white">or</span>
+        <div className="flex-grow border-t border-[#E2E8F0]"></div>
       </div>
 
       <div className="text-center text-sm text-muted-foreground">
@@ -440,7 +437,7 @@ function SignUpForm({
               replace: true,
             });
           }}
-          className="font-semibold text-primary hover:underline ml-1"
+          className="font-semibold text-[#4665FF] hover:underline ml-1"
         >
           Sign in
         </button>
@@ -462,46 +459,60 @@ function RoleSelectionScreen({
   const [loading, setLoading] = useState<string | null>(null);
 
   async function handleRoleSelect(role: "student" | "parent" | "teacher") {
-    if (!formData) return;
-    setLoading(role);
-    const { data, error } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: {
-          full_name: formData.fullName,
-          phone: formData.phone,
-          role: role,
-        },
-      },
-    });
-    setLoading(null);
-    if (error) {
-      toast.error(error.message);
+    console.log("RoleSelectionScreen: Clicked card for role:", role);
+    console.log("RoleSelectionScreen: Form data is:", formData);
+    if (!formData) {
+      console.warn("RoleSelectionScreen: formData is missing!");
+      toast.error("Form data is missing. Please go back and fill the form again.");
       return;
     }
+    try {
+      console.log("RoleSelectionScreen: Initiating supabase signUp...");
+      setLoading(role);
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email.trim(),
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: formData.fullName.trim(),
+            phone: formData.phone?.trim() || null,
+            role: role,
+          },
+        },
+      });
+      console.log("RoleSelectionScreen: supabase signUp response:", { data, error });
+      setLoading(null);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
 
-    if (data.session) {
-      toast.success("Account created and signed in!");
-      navigate({ to: onboardingPathForRole(role), replace: true });
-    } else {
-      toast.success("Account created! Please check your email to confirm and log in.", {
-        duration: 8000,
-      });
-      setTab("signin");
-      navigate({
-        to: "/auth",
-        search: (prev) => ({ ...prev, mode: "signin" }),
-        replace: true,
-      });
+      if (data.session) {
+        toast.success("Account created and signed in!");
+        navigate({ to: onboardingPathForRole(role), replace: true });
+      } else {
+        toast.success("Account created! Please check your email to confirm and log in.", {
+          duration: 8000,
+        });
+        setTab("signin");
+        navigate({
+          to: "/auth",
+          search: (prev: any) => ({ ...prev, mode: "signin" }),
+          replace: true,
+        });
+      }
+    } catch (err: any) {
+      setLoading(null);
+      toast.error(err.message || "An unexpected error occurred during signup.");
+      console.error("Signup error:", err);
     }
   }
 
   return (
     <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="text-center">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground font-display">Please choose your role</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-[#1A1A1A] font-display">Please choose your role</h2>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -525,7 +536,7 @@ function RoleSelectionScreen({
               <circle cx="48" cy="34" r="2" fill="currentColor" />
             </svg>
           )}
-          <span className="mt-4 text-base font-semibold text-foreground font-display group-hover:text-primary transition-colors duration-300">I am Student</span>
+          <span className="mt-4 text-base font-semibold text-[#1A1A1A] font-display group-hover:text-primary transition-colors duration-300">I am Student</span>
         </button>
 
         {/* Parent Card */}
@@ -547,7 +558,7 @@ function RoleSelectionScreen({
               <path d="M36 48c0-5 4-8 8-8s8 3 8 8v8H36v-8z" />
             </svg>
           )}
-          <span className="mt-4 text-base font-semibold text-foreground font-display group-hover:text-primary transition-colors duration-300">I am Parent</span>
+          <span className="mt-4 text-base font-semibold text-[#1A1A1A] font-display group-hover:text-primary transition-colors duration-300">I am Parent</span>
         </button>
 
         {/* Teacher Card */}
@@ -569,7 +580,7 @@ function RoleSelectionScreen({
               <path d="M22 28l12-4" />
             </svg>
           )}
-          <span className="mt-4 text-base font-semibold text-foreground font-display group-hover:text-primary transition-colors duration-300">I am Teacher</span>
+          <span className="mt-4 text-base font-semibold text-[#1A1A1A] font-display group-hover:text-primary transition-colors duration-300">I am Teacher</span>
         </button>
       </div>
 

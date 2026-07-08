@@ -31,7 +31,7 @@ function TeacherOnboarding() {
   const [s1, setS1] = useState({ full_name: "", email: "", phone: "", city: "", area: "", avatar_url: "" });
   // Section 2
   const [s2, setS2] = useState({ highest_degree: "", university: "", years_experience: 0, certifications: [] as string[], other_experience: [] as string[] });
-  // Section 3 — subjects rows
+  // Section 3: subjects rows
   const [subjects, setSubjects] = useState<{ subject: string; level: string; board: string }[]>([
     { subject: "", level: "", board: "" },
   ]);

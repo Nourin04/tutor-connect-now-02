@@ -5,7 +5,7 @@ import { AppFooter } from "@/components/site/AppFooter";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms of Service — TutorConnect" },
+      { title: "Terms of Service | TutorConnect" },
       { name: "description", content: "The rules that apply when you use TutorConnect to find or offer tutoring." },
     ],
   }),
@@ -31,7 +31,7 @@ function TermsPage() {
             <p>Information you add to your profile (qualifications, bio, reviews) should be truthful. We may remove listings or reviews that look fake, misleading, or inappropriate, at our discretion.</p>
           </Section>
           <Section title="4. Connecting with tutors">
-            <p>When you reveal a tutor's contact details, we log that you did so. We use that signal to help with quality (e.g. prompting reviews). Lessons, fees, and any agreements between you and a tutor are entirely between you two — TutorConnect is not a party to them.</p>
+            <p>When you reveal a tutor's contact details, we log that action to help ensure quality (such as prompting reviews). Lessons, fees, and any agreements are negotiated directly between you and the tutor; TutorConnect is not a party to these agreements.</p>
           </Section>
           <Section title="5. Reviews">
             <p>Reviews must be honest and based on real interactions. Abusive reviews, spam, fake reviews, or anything illegal will be removed. Tutors can flag reviews they believe break these rules.</p>
@@ -43,7 +43,7 @@ function TermsPage() {
             <p>You can close your account at any time. We may suspend accounts that violate these terms or harm other users.</p>
           </Section>
           <Section title="8. Disclaimer">
-            <p>TutorConnect is provided "as is". We make no warranties about specific tutors, learning outcomes, or the safety of any interaction. Use the platform thoughtfully — especially for in-person sessions.</p>
+            <p>TutorConnect is provided "as is". We make no warranties regarding specific tutors, learning outcomes, or the safety of any interactions. We encourage all users to make informed decisions, especially for in-person sessions.</p>
           </Section>
           <Section title="9. Changes">
             <p>We may update these terms as TutorConnect evolves. Material changes will be communicated through the app or by email.</p>

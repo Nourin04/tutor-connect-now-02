@@ -16,8 +16,8 @@ import { Star, MapPin, SlidersHorizontal, X } from "lucide-react";
 export const Route = createFileRoute("/tutors")({
   head: () => ({
     meta: [
-      { title: "Find a tutor — TutorConnect" },
-      { name: "description", content: "Browse verified local tutors. Filter by subject, level, location, board, fees, mode and more." },
+      { title: "Find a Tutor | TutorConnect" },
+      { name: "description", content: "Browse local tutors. Filter by subject, level, location, board, fees, mode and more." },
     ],
   }),
   component: TutorsPage,
@@ -73,8 +73,15 @@ function TutorsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const city = params.get("city") || "";
+    const subject = params.get("subject") || "";
     if (city) {
       set("city", city);
+    }
+    if (subject) {
+      const match = SUBJECTS.find((s) => s.toLowerCase() === subject.toLowerCase());
+      if (match) {
+        set("subject", match);
+      }
     }
   }, []);
 
