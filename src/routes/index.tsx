@@ -33,9 +33,9 @@ import {
   LogOut,
   LayoutDashboard,
 } from "lucide-react";
-import heroTutor from "@/assets/hero-tutor.jpg";
+import heroTutor from "@/assets/01.png";
 import studentImg from "@/assets/student-1.jpg";
-import tutorImg from "@/assets/tutor-1.jpg";
+import tutorImg from "@/assets/02.png";
 import parentImg from "@/assets/parent-child.jpg";
 import logoUrl from "@/assets/tutorconnect-logo.svg";
 
