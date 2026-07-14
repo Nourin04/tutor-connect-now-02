@@ -20,11 +20,12 @@ import {
   Eye,
 } from "lucide-react";
 import { fetchMyRoles } from "@/lib/auth-helpers";
+import { capitalize } from "@/lib/string-helpers";
 
 export const Route = createFileRoute("/tutors/$id")({
   head: () => ({
     meta: [
-      { title: "Tutor profile — TutorConnect" },
+      { title: "Tutor Profile | TutorConnect" },
       { name: "description", content: "View tutor qualifications, subjects, availability, fees, and reviews." },
     ],
   }),
@@ -164,16 +165,16 @@ function TutorProfilePage() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h1 className="text-2xl font-bold">{tutor.profiles?.full_name}</h1>
+                      <h1 className="text-2xl font-bold">{tutor.profiles?.full_name ? capitalize(tutor.profiles.full_name) : ""}</h1>
                       <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                         <MapPin className="h-3.5 w-3.5" />
-                        {[tutor.profiles?.area, tutor.profiles?.city].filter(Boolean).join(", ") || "Location not set"}
+                        {[tutor.profiles?.area, tutor.profiles?.city].filter(Boolean).map(capitalize).join(", ") || "Location not set"}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Star className="h-5 w-5 fill-primary text-primary" />
-                      <span className="text-lg font-semibold">{Number(tutor.rating_avg).toFixed(1)}</span>
-                      <span className="text-sm text-muted-foreground">({tutor.rating_count} reviews)</span>
+                      <span className="text-lg font-semibold font-display">{Number(tutor.rating_avg).toFixed(1)}</span>
+                      <span className="text-sm text-muted-foreground font-display">({tutor.rating_count} reviews)</span>
                     </div>
                   </div>
                   {tutor.bio && <p className="mt-4 text-sm leading-relaxed text-foreground/90">{tutor.bio}</p>}
@@ -183,17 +184,17 @@ function TutorProfilePage() {
 
             {/* Qualifications */}
             <Section title="Qualifications" icon={GraduationCap}>
-              <Row label="Highest degree" value={tutor.highest_degree || "—"} />
-              <Row label="University / Institution" value={tutor.university || "—"} />
-              <Row label="Years of experience" value={`${tutor.years_experience} year${tutor.years_experience === 1 ? "" : "s"}`} />
+              <Row label="Highest degree" value={tutor.highest_degree ? capitalize(tutor.highest_degree) : "-"} />
+              <Row label="University / Institution" value={tutor.university ? capitalize(tutor.university) : "-"} />
+              <Row label="Years of experience" value={<span><span className="font-display font-semibold">{tutor.years_experience}</span> year{tutor.years_experience === 1 ? "" : "s"}</span>} />
               {(tutor.certifications ?? []).length > 0 && (
-                <Row label="Certifications" value={tutor.certifications.join(", ")} />
+                <Row label="Certifications" value={tutor.certifications.map(capitalize).join(", ")} />
               )}
               {(tutor.other_experience ?? []).length > 0 && (
                 <div className="border-t border-border pt-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Other experience</p>
                   <ul className="mt-2 space-y-1 text-sm">
-                    {tutor.other_experience.map((e: string, i: number) => <li key={i} className="flex gap-2"><Briefcase className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />{e}</li>)}
+                    {tutor.other_experience.map((e: string, i: number) => <li key={i} className="flex gap-2"><Briefcase className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />{capitalize(e)}</li>)}
                   </ul>
                 </div>
               )}
@@ -204,7 +205,7 @@ function TutorProfilePage() {
               <div className="grid gap-2 sm:grid-cols-2">
                 {(tutor.teacher_subjects ?? []).map((s: any, i: number) => (
                   <div key={i} className="rounded-xl border border-border bg-background p-3">
-                    <p className="font-semibold">{s.subject}</p>
+                    <p className="font-semibold">{capitalize(s.subject)}</p>
                     <p className="text-xs text-muted-foreground">{s.level} · {s.board}</p>
                   </div>
                 ))}
@@ -214,10 +215,10 @@ function TutorProfilePage() {
 
             {/* Availability */}
             <Section title="Availability" icon={Clock}>
-              <Row label="Days" value={(tutor.available_days ?? []).join(", ") || "—"} />
-              <Row label="Time slots" value={(tutor.time_slots ?? []).join(", ") || "—"} />
-              <Row label="Mode" value={tutor.mode === "both" ? "Online & in-person" : tutor.mode} />
-              <Row label="Languages" value={(tutor.languages ?? []).join(", ") || "—"} icon={Languages} />
+              <Row label="Days" value={(tutor.available_days ?? []).map(capitalize).join(", ") || "-"} />
+              <Row label="Time slots" value={(tutor.time_slots ?? []).join(", ") || "-"} />
+              <Row label="Mode" value={tutor.mode === "both" ? "Online & in-person" : capitalize(tutor.mode)} />
+              <Row label="Languages" value={(tutor.languages ?? []).map(capitalize).join(", ") || "-"} icon={Languages} />
             </Section>
 
             {/* Reviews */}
@@ -252,7 +253,7 @@ function TutorProfilePage() {
                 {reviews.map((r) => (
                   <li key={r.id} className="rounded-xl border border-border bg-background p-4">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">{r.profiles?.full_name ?? "A student"}</p>
+                      <p className="text-sm font-semibold">{r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A student"}</p>
                       <div className="flex gap-0.5 text-primary">
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star key={i} className={`h-3.5 w-3.5 ${i < r.rating ? "fill-primary" : "text-muted-foreground/30"}`} />
@@ -263,7 +264,7 @@ function TutorProfilePage() {
                     <p className="mt-2 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
                   </li>
                 ))}
-                {reviews.length === 0 && <p className="text-sm text-muted-foreground">No reviews yet — be the first!</p>}
+                {reviews.length === 0 && <p className="text-sm text-muted-foreground">No reviews yet. Be the first to share your experience!</p>}
               </ul>
             </section>
           </div>
@@ -272,9 +273,9 @@ function TutorProfilePage() {
           <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
             <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Fees</p>
-              <p className="mt-1 text-2xl font-bold">
+              <p className="mt-1 text-2xl font-bold font-display">
                 {tutor.fee_min === tutor.fee_max ? `₹${tutor.fee_min}` : `₹${tutor.fee_min}–${tutor.fee_max}`}
-                <span className="text-base font-normal text-muted-foreground"> / hr</span>
+                <span className="text-base font-normal text-muted-foreground font-sans"> / hr</span>
               </p>
 
               <div className="mt-5">
@@ -295,7 +296,7 @@ function TutorProfilePage() {
                         <div className="flex items-center gap-2 border-t border-border/50 pt-2.5">
                           <Phone className="h-4 w-4 text-primary" />
                           <a className="hover:underline" href={`tel:${phone}`}>
-                            {phone || "—"}
+                            {phone || "-"}
                           </a>
                         </div>
                       )}

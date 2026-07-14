@@ -5,7 +5,7 @@ import { AppFooter } from "@/components/site/AppFooter";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — TutorConnect" },
+      { title: "Privacy Policy | TutorConnect" },
       { name: "description", content: "How TutorConnect collects, uses, and protects your information." },
     ],
   }),
@@ -31,7 +31,7 @@ function PrivacyPage() {
           </Section>
           <Section title="How we use it">
             <ul className="list-disc space-y-1 pl-5">
-              <li>To run the marketplace — surface relevant tutors, show reviews, and prevent abuse.</li>
+              <li>To operate the marketplace, surface relevant tutors, show reviews, and prevent abuse.</li>
               <li>To improve search results and matching.</li>
               <li>To send you account, safety, and review-reminder messages.</li>
               <li>To respond to support requests.</li>
@@ -50,7 +50,7 @@ function PrivacyPage() {
             <p>You can view, edit, or delete your profile from your dashboard at any time. For other data requests, email hello@tutorconnect.example.</p>
           </Section>
           <Section title="Security">
-            <p>We use industry-standard practices (encryption in transit, row-level access control in the database) to protect your data. No system is perfect — please use a strong password and don't share it.</p>
+            <p>We use industry-standard practices (encryption in transit, row-level access control in the database) to protect your data. While no system is completely secure, we encourage you to use a strong password and keep it confidential.</p>
           </Section>
           <Section title="Children">
             <p>Children under 13 should not create accounts directly. Parents can manage learning accounts on behalf of their children.</p>
