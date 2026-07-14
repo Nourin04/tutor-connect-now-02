@@ -7,9 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Star, Eye, Pencil, Search, MessageCircle, GraduationCap, Home, User, LogOut, SlidersHorizontal, MapPin } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Star, Eye, Pencil, Search, MessageCircle, GraduationCap, Home, User, LogOut, SlidersHorizontal, MapPin, LayoutDashboard } from "lucide-react";
 import { fetchPrimaryRole, type AppRole, dashboardPathForRole } from "@/lib/auth-helpers";
 import { toast } from "sonner";
+import { capitalize } from "@/lib/string-helpers";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -35,8 +43,16 @@ function DashboardPage() {
           navigate({ to: "/admin", replace: true });
           return;
         }
-        const { data: p } = await supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle();
-        setMe(p);
+        
+        const [pRes, phoneRes] = await Promise.all([
+          supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle(),
+          supabase.from("user_phones").select("phone").eq("user_id", u.user.id).maybeSingle(),
+        ]);
+        const profileData = pRes.data;
+        if (profileData) {
+          profileData.phone = phoneRes.data?.phone ?? "";
+        }
+        setMe(profileData);
       } catch (err) {
         console.error("Error loading dashboard data:", err);
       } finally {
@@ -70,7 +86,49 @@ function DashboardPage() {
         </div>
         <div className="flex items-center gap-4">
           <Badge className="bg-primary/10 text-primary border-0 capitalize">{role}</Badge>
-          <span className="hidden sm:inline text-sm font-medium text-muted-foreground">{email}</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full border border-border hover:bg-muted relative overflow-hidden shrink-0">
+                {me?.avatar_url ? (
+                  <img src={me.avatar_url} alt={me.full_name ?? "Profile"} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-xs font-bold text-[#4665FF]">
+                    {me?.full_name ? capitalize(me.full_name).slice(0, 1) : <User className="h-4 w-4" />}
+                  </div>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60 p-2">
+              <div className="px-2 py-1.5 flex flex-col">
+                <span className="text-sm font-bold text-[#1A1A1A]">
+                  {me?.full_name ? capitalize(me.full_name) : "User Profile"}
+                </span>
+                <span className="text-xs text-muted-foreground truncate">{email}</span>
+                {role !== "student" && role !== "parent" && (
+                  <span className="text-[10px] text-primary/80 font-semibold uppercase tracking-wider mt-1">
+                    Role: {role ?? "user"}
+                  </span>
+                )}
+              </div>
+              {role !== "student" && role !== "parent" && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={dashboardPathForRole(role)}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/tutors">
+                      <Search className="mr-2 h-4 w-4" />
+                      Find tutors
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -263,9 +321,9 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
 
         <div className="mt-4 divide-y divide-border/50">
           {requests.map((r, index) => {
-            const studentName = r.profiles?.full_name || "A Student";
+            const studentName = r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A Student";
             const grade = r.profiles?.student_profiles?.class_grade || "Any Grade";
-            const subjects = (r.profiles?.student_profiles?.subjects_of_interest ?? []).join(", ") || "Any Subject";
+            const subjects = (r.profiles?.student_profiles?.subjects_of_interest ?? []).map(capitalize).join(", ") || "Any Subject";
 
             return (
               <div key={r.id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 first:pt-0 last:pb-0">
@@ -362,7 +420,7 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
     toast.success(v ? "Listing reactivated." : "Listing deactivated.");
   }
 
-  const subjectNames = subjects.map((s) => `${s.subject} (${s.level})`).join(", ");
+  const subjectNames = subjects.map((s) => `${capitalize(s.subject)} (${s.level})`).join(", ");
 
   return (
     <div className="space-y-6">
@@ -378,7 +436,7 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
           </Button>
           <Button
             onClick={() => navigate({ to: "/onboarding/teacher" })}
-            className="bg-[#E2E8F0] text-[#1A1A1A] hover:bg-[#CBD5E1] rounded-full px-5 font-semibold"
+            className="bg-[#4665FF] text-white hover:bg-[#4665FF]/90 rounded-full px-5 font-semibold"
           >
             Edit
           </Button>
@@ -427,12 +485,12 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
           <div className="space-y-4">
             <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Personal Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <ProfileItem label="Full Name" value={me?.full_name} />
+              <ProfileItem label="Full Name" value={capitalize(me?.full_name)} />
               <ProfileItem label="Email Address" value={email} />
               <ProfileItem label="Phone Number" value={me?.phone} />
-              <ProfileItem label="Gender" value={tp?.gender} className="capitalize" />
-              <ProfileItem label="City" value={me?.city} />
-              <ProfileItem label="Area" value={me?.area} />
+              <ProfileItem label="Gender" value={tp?.gender ? capitalize(tp.gender) : "-"} className="capitalize" />
+              <ProfileItem label="City" value={capitalize(me?.city)} />
+              <ProfileItem label="Area" value={capitalize(me?.area)} />
               <ProfileItem label="Biography" value={tp?.bio} className="md:col-span-2 leading-relaxed" />
             </div>
           </div>
@@ -448,6 +506,12 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
                 value={tp ? (tp.fee_min === tp.fee_max ? `₹${tp.fee_min}/hr` : `₹${tp.fee_min}–₹${tp.fee_max}/hr`) : "-"}
               />
               <ProfileItem label="Subjects Taught" value={subjectNames || "-"} className="md:col-span-2" />
+              {(tp?.certifications ?? []).length > 0 && (
+                <ProfileItem label="Certifications" value={tp.certifications.map(capitalize).join(", ")} className="md:col-span-2" />
+              )}
+              {(tp?.other_experience ?? []).length > 0 && (
+                <ProfileItem label="Other Related Experience" value={tp.other_experience.map(capitalize).join(", ")} className="md:col-span-2" />
+              )}
             </div>
           </div>
         )}
@@ -457,8 +521,11 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
             <div>
               <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Availability Parameters</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <ProfileItem label="Teaching Mode" value={tp?.mode === "both" ? "Online & In-Person" : tp?.mode} className="capitalize" />
-                <div className="rounded-xl border border-border bg-slate-50/50 p-4 flex items-center justify-between">
+                <ProfileItem label="Teaching Mode" value={tp?.mode === "both" ? "Online & In-Person" : capitalize(tp?.mode)} />
+                <ProfileItem label="Languages of Instruction" value={(tp?.languages ?? []).map(capitalize).join(", ") || "-"} />
+                <ProfileItem label="Available Days" value={(tp?.available_days ?? []).map(capitalize).join(", ") || "-"} />
+                <ProfileItem label="Time Slots" value={(tp?.time_slots ?? []).join(", ") || "-"} />
+                <div className="rounded-xl border border-border bg-slate-50/50 p-4 flex items-center justify-between md:col-span-2">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Listing Visibility</p>
                     <p className="mt-1 text-sm font-bold text-[#1A1A1A]">
@@ -507,18 +574,6 @@ function LearnerDashboard({ me }: { me: any }) {
         console.error("Error loading tutors:", err);
       } finally {
         setLoadingTutors(false);
-      }
-    })();
-  }, []);
-
-  // Sync user profile location city
-  useEffect(() => {
-    (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      const { data: prof } = await supabase.from("profiles").select("city").eq("id", u.user.id).maybeSingle();
-      if (prof?.city) {
-        setLocationQuery(prof.city);
       }
     })();
   }, []);
@@ -643,7 +698,7 @@ function LearnerDashboard({ me }: { me: any }) {
 
 function TutorGridCard({ tutor }: { tutor: any }) {
   const rating = Number(tutor.rating_avg || 0).toFixed(1);
-  const subjects = (tutor.teacher_subjects ?? []).map((s: any) => s.subject).join(", ");
+  const subjects = (tutor.teacher_subjects ?? []).map((s: any) => capitalize(s.subject)).join(", ");
   const feeLabel = tutor.fee_min === tutor.fee_max ? `₹${tutor.fee_min}/hr` : `₹${tutor.fee_min}–${tutor.fee_max}/hr`;
 
   return (
@@ -656,11 +711,11 @@ function TutorGridCard({ tutor }: { tutor: any }) {
             <User className="h-10 w-10 text-slate-400" />
           )}
         </div>
-        <h3 className="text-base font-bold text-[#1A1A1A] line-clamp-1">{tutor.profiles?.full_name || "Tutor Profile"}</h3>
+        <h3 className="text-base font-bold text-[#1A1A1A] line-clamp-1">{tutor.profiles?.full_name ? capitalize(tutor.profiles.full_name) : "Tutor Profile"}</h3>
         <p className="text-xs text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
           <MapPin className="h-3 w-3 shrink-0 text-[#4665FF]" />
           <span className="truncate">
-            {tutor.profiles?.area ? `${tutor.profiles.area}, ${tutor.profiles.city}` : tutor.profiles?.city || "Local"}
+            {tutor.profiles?.area ? `${capitalize(tutor.profiles.area)}, ${capitalize(tutor.profiles.city)}` : tutor.profiles?.city ? capitalize(tutor.profiles.city) : "Local"}
           </span>
         </p>
       </div>
@@ -696,11 +751,13 @@ function TutorGridCard({ tutor }: { tutor: any }) {
 
 function LearnerProfileTab({ me }: { me: any }) {
   const [sp, setSp] = useState<any>(null);
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
+      setEmail(u.user.email ?? null);
       const { data: spRes } = await supabase.from("student_profiles").select("*").eq("user_id", u.user.id).maybeSingle();
       setSp(spRes);
     })();
@@ -720,33 +777,40 @@ function LearnerProfileTab({ me }: { me: any }) {
         </Button>
       </div>
 
-      {sp ? (
-        <div className="bg-white rounded-2xl border border-border p-6 grid gap-4 md:grid-cols-3 shadow-sm">
-          <Stat label="Grade / Level" value={sp.class_grade || "-"} />
-          <Stat label="Mode Preference" value={sp.mode_preference === "both" ? "Online & In-person" : sp.mode_preference} />
-          {sp.subjects_of_interest && sp.subjects_of_interest.length > 0 ? (
-            <div className="md:col-span-3 mt-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subjects of Interest</p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {sp.subjects_of_interest.map((sub: string, i: number) => (
-                  <Badge key={i} variant="secondary" className="bg-[#4665FF]/10 text-[#4665FF] border-0">
-                    {sub}
-                  </Badge>
-                ))}
+      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm space-y-6">
+        <div>
+          <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Personal Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <ProfileItem label="Full Name" value={capitalize(me?.full_name)} />
+            <ProfileItem label="Email Address" value={email} />
+            <ProfileItem label="Phone Number" value={me?.phone} />
+            <ProfileItem label="City" value={capitalize(me?.city)} />
+            <ProfileItem label="Area" value={capitalize(me?.area)} />
+          </div>
+        </div>
+
+        {sp && (
+          <div className="border-t border-border/80 pt-6">
+            <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Learning Preferences</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+              <ProfileItem label="Grade / Level" value={sp.class_grade} />
+              <ProfileItem label="Mode Preference" value={sp.mode_preference === "both" ? "Online & In-person" : capitalize(sp.mode_preference)} />
+            </div>
+            {sp.subjects_of_interest && sp.subjects_of_interest.length > 0 && (
+              <div className="rounded-xl border border-border bg-slate-50/50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subjects of Interest</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {sp.subjects_of_interest.map((sub: string, i: number) => (
+                    <Badge key={i} variant="secondary" className="bg-[#4665FF]/10 text-[#4665FF] border-0">
+                      {capitalize(sub)}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="md:col-span-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subjects of Interest</p>
-              <p className="mt-1 text-sm text-muted-foreground">No subjects added yet.</p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-border p-8 text-center text-muted-foreground">
-          You haven't set up your learning profile yet. Click "Edit Profile" to get started!
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

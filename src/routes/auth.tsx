@@ -38,6 +38,7 @@ function AuthPage() {
   const [tab, setTab] = useState<"signin" | "signup">(mode);
   const [step, setStep] = useState<"form" | "choose-role">("form");
   const [savedFormData, setSavedFormData] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -69,7 +70,13 @@ function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-white transition-colors duration-300">
+    <div className="min-h-screen w-full flex bg-white transition-colors duration-300 relative">
+      {authLoading && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4665FF]"></div>
+          <p className="mt-4 text-sm font-semibold text-[#1A1A1A]">Redirecting to dashboard...</p>
+        </div>
+      )}
       {/* Left side: Solid brand blue background */}
       <div className="hidden md:block md:w-[45%] bg-[#4665FF] shrink-0" />
 
@@ -77,12 +84,13 @@ function AuthPage() {
       <div className="flex-1 md:w-[55%] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className={`w-full mx-auto transition-all duration-500 ease-in-out ${tab === "signup" && step === "choose-role" ? "max-w-[750px]" : "max-w-[400px]"}`}>
           {tab === "signin" ? (
-            <SignInForm setTab={setTab} />
+            <SignInForm setTab={setTab} setAuthLoading={setAuthLoading} />
           ) : step === "choose-role" ? (
             <RoleSelectionScreen
               formData={savedFormData}
               setStep={setStep}
               setTab={setTab}
+              setAuthLoading={setAuthLoading}
             />
           ) : (
             <SignUpForm
@@ -97,21 +105,23 @@ function AuthPage() {
   );
 }
 
-function SignInForm({ setTab }: { setTab: (t: "signin" | "signup") => void }) {
+function SignInForm({ setTab, setAuthLoading }: { setTab: (t: "signin" | "signup") => void; setAuthLoading: (l: boolean) => void }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
       return;
     }
+    setAuthLoading(true);
     toast.success("Welcome back!");
     const role = await fetchPrimaryRole();
     navigate({ to: dashboardPathForRole(role), replace: true });
@@ -172,19 +182,32 @@ function SignInForm({ setTab }: { setTab: (t: "signin" | "signup") => void }) {
           />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 text-left">
           <Label htmlFor="si-password" className="text-sm font-semibold text-[#1A1A1A]">
             Password <span className="text-rose-500">*</span>
           </Label>
-          <Input
-            id="si-password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            className="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
-          />
+          <div className="relative flex items-center">
+            <Input
+              id="si-password"
+              type={showPassword ? "text" : "password"}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="w-full h-12 pl-4 pr-12 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
 
         <Button type="submit" disabled={loading} className="w-full h-12 rounded-full bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm !mt-6">
@@ -258,10 +281,28 @@ function SignInForm({ setTab }: { setTab: (t: "signin" | "signup") => void }) {
 
 const signupSchema = z
   .object({
-    fullName: z.string().trim().min(2, "Enter your full name").max(80),
-    email: z.string().trim().email("Invalid email").max(255),
-    phone: z.string().trim().refine((val) => val === "" || (val.length >= 7 && val.length <= 20), "Enter a valid phone number"),
-    password: z.string().min(8, "At least 8 characters").max(72),
+    fullName: z
+      .string()
+      .trim()
+      .min(2, "Name must be at least 2 characters")
+      .max(80, "Name must be at most 80 characters")
+      .regex(/^[a-zA-Z\s'-]+$/, "Name can only contain letters, hyphens, apostrophes, and spaces"),
+    email: z
+      .string()
+      .trim()
+      .email("Invalid email address")
+      .max(255, "Email must be at most 255 characters"),
+    phone: z
+      .string()
+      .trim()
+      .refine(
+        (val) => val === "" || /^\+?[0-9\s-()]{7,20}$/.test(val),
+        "Enter a valid phone number (7 to 20 digits, spaces, hyphens, parentheses, optional +)"
+      ),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(72, "Password must be at most 72 characters"),
     confirm: z.string(),
     role: z.enum(["student", "parent", "teacher"]),
   })
@@ -288,7 +329,6 @@ function SignUpForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Validate schema (dummy role to satisfy validation during form step)
     const parsed = signupSchema.safeParse({ ...form, role: "student" });
     if (!parsed.success) {
       const fieldErrors: Record<string, string> = {};
@@ -319,6 +359,7 @@ function SignUpForm({
             value={form.fullName}
             onChange={(e) => setField("fullName", e.target.value)}
             required
+            maxLength={80}
             className="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
           />
           {errors.fullName && <p className="text-xs text-destructive mt-1">{errors.fullName}</p>}
@@ -335,6 +376,7 @@ function SignUpForm({
             value={form.email}
             onChange={(e) => setField("email", e.target.value)}
             required
+            maxLength={255}
             autoComplete="email"
             className="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
           />
@@ -351,6 +393,7 @@ function SignUpForm({
             placeholder="+91 9876543210"
             value={form.phone}
             onChange={(e) => setField("phone", e.target.value)}
+            maxLength={20}
             className="w-full h-12 px-4 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
           />
           {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
@@ -367,6 +410,7 @@ function SignUpForm({
               value={form.password}
               onChange={(e) => setField("password", e.target.value)}
               required
+              maxLength={72}
               autoComplete="new-password"
               className="w-full h-12 pl-4 pr-12 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/40"
             />
@@ -396,6 +440,7 @@ function SignUpForm({
               value={form.confirm}
               onChange={(e) => setField("confirm", e.target.value)}
               required
+              maxLength={72}
               autoComplete="new-password"
               className="w-full h-12 pl-4 pr-12 rounded-2xl border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/40"
             />
@@ -450,24 +495,22 @@ function RoleSelectionScreen({
   formData,
   setStep,
   setTab,
+  setAuthLoading,
 }: {
   formData: any;
   setStep: (s: "form" | "choose-role") => void;
   setTab: (t: "signin" | "signup") => void;
+  setAuthLoading: (l: boolean) => void;
 }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
 
   async function handleRoleSelect(role: "student" | "parent" | "teacher") {
-    console.log("RoleSelectionScreen: Clicked card for role:", role);
-    console.log("RoleSelectionScreen: Form data is:", formData);
     if (!formData) {
-      console.warn("RoleSelectionScreen: formData is missing!");
       toast.error("Form data is missing. Please go back and fill the form again.");
       return;
     }
     try {
-      console.log("RoleSelectionScreen: Initiating supabase signUp...");
       setLoading(role);
       const { data, error } = await supabase.auth.signUp({
         email: formData.email.trim(),
@@ -481,17 +524,18 @@ function RoleSelectionScreen({
           },
         },
       });
-      console.log("RoleSelectionScreen: supabase signUp response:", { data, error });
-      setLoading(null);
       if (error) {
+        setLoading(null);
         toast.error(error.message);
         return;
       }
 
       if (data.session) {
+        setAuthLoading(true);
         toast.success("Account created and signed in!");
         navigate({ to: onboardingPathForRole(role), replace: true });
       } else {
+        setLoading(null);
         toast.success("Account created! Please check your email to confirm and log in.", {
           duration: 8000,
         });
@@ -505,7 +549,6 @@ function RoleSelectionScreen({
     } catch (err: any) {
       setLoading(null);
       toast.error(err.message || "An unexpected error occurred during signup.");
-      console.error("Signup error:", err);
     }
   }
 
