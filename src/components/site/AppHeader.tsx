@@ -12,11 +12,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Brand } from "./Brand";
 import { User, LogOut, LayoutDashboard, Search } from "lucide-react";
-import {
-  fetchPrimaryRole,
-  type AppRole,
-  dashboardPathForRole,
-} from "@/lib/auth-helpers";
+import { fetchPrimaryRole, type AppRole, dashboardPathForRole } from "@/lib/auth-helpers";
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -55,10 +51,18 @@ export function AppHeader() {
         <div className="flex items-center gap-2">
           {!isMounted ? (
             <>
-              <Link to="/auth" search={{ mode: "signin" }} className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all">
+              <Link
+                to="/auth"
+                search={{ mode: "signin" }}
+                className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
+              >
                 Sign in
               </Link>
-              <Button size="sm" asChild className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft">
+              <Button
+                size="sm"
+                asChild
+                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft"
+              >
                 <Link to="/auth" search={{ mode: "signup" }}>
                   Get started
                 </Link>
@@ -92,16 +96,29 @@ export function AppHeader() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button size="sm" variant="outline" onClick={signOut} className="rounded-full font-semibold">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={signOut}
+                className="rounded-full font-semibold"
+              >
                 Logout
               </Button>
             </div>
           ) : (
             <>
-              <Link to="/auth" search={{ mode: "signin" }} className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all">
+              <Link
+                to="/auth"
+                search={{ mode: "signin" }}
+                className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
+              >
                 Sign in
               </Link>
-              <Button size="sm" asChild className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft">
+              <Button
+                size="sm"
+                asChild
+                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft"
+              >
                 <Link to="/auth" search={{ mode: "signup" }}>
                   Get started
                 </Link>

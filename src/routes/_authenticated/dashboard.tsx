@@ -6,8 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Star, Eye, Pencil, Search, MessageCircle, GraduationCap, Home, User, LogOut, SlidersHorizontal, MapPin } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Star,
+  Eye,
+  Pencil,
+  Search,
+  MessageCircle,
+  GraduationCap,
+  Home,
+  User,
+  LogOut,
+  SlidersHorizontal,
+  MapPin,
+} from "lucide-react";
 import { fetchPrimaryRole, type AppRole, dashboardPathForRole } from "@/lib/auth-helpers";
 import { toast } from "sonner";
 
@@ -35,7 +53,11 @@ function DashboardPage() {
           navigate({ to: "/admin", replace: true });
           return;
         }
-        const { data: p } = await supabase.from("profiles").select("*").eq("id", u.user.id).maybeSingle();
+        const { data: p } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", u.user.id)
+          .maybeSingle();
         setMe(p);
       } catch (err) {
         console.error("Error loading dashboard data:", err);
@@ -70,7 +92,9 @@ function DashboardPage() {
         </div>
         <div className="flex items-center gap-4">
           <Badge className="bg-primary/10 text-primary border-0 capitalize">{role}</Badge>
-          <span className="hidden sm:inline text-sm font-medium text-muted-foreground">{email}</span>
+          <span className="hidden sm:inline text-sm font-medium text-muted-foreground">
+            {email}
+          </span>
         </div>
       </header>
 
@@ -148,7 +172,8 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
     try {
       const { data: reqData } = await supabase
         .from("contact_events")
-        .select(`
+        .select(
+          `
           id, 
           status, 
           created_at, 
@@ -158,15 +183,14 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
             email, 
             student_profiles:student_profiles(class_grade, subjects_of_interest)
           )
-        `)
+        `,
+        )
         .eq("teacher_id", tId)
         .order("created_at", { ascending: false });
 
       const reqs = (reqData as any[]) ?? [];
 
-      const acceptedIds = reqs
-        .filter((r) => r.status === "accepted")
-        .map((r) => r.viewer_id);
+      const acceptedIds = reqs.filter((r) => r.status === "accepted").map((r) => r.viewer_id);
 
       let phonesMap: Record<string, string> = {};
       if (acceptedIds.length > 0) {
@@ -183,7 +207,7 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
         reqs.map((r) => ({
           ...r,
           phone: phonesMap[r.viewer_id] || null,
-        }))
+        })),
       );
     } catch (err) {
       console.error("Error loading requests:", err);
@@ -215,7 +239,10 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
         setUserId(u.user.id);
         const [tpRes, cRes] = await Promise.all([
           supabase.from("teacher_profiles").select("*").eq("user_id", u.user.id).maybeSingle(),
-          supabase.from("contact_events").select("id", { count: "exact", head: true }).eq("teacher_id", u.user.id),
+          supabase
+            .from("contact_events")
+            .select("id", { count: "exact", head: true })
+            .eq("teacher_id", u.user.id),
         ]);
         setTp(tpRes.data);
         setContactCount(cRes.count ?? 0);
@@ -229,7 +256,11 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
   }, []);
 
   const ratingAvg = tp?.rating_avg ? Number(tp.rating_avg).toFixed(1) : "0.0";
-  const feeLabel = tp ? (tp.fee_min === tp.fee_max ? `₹${tp.fee_min}/hr` : `₹${tp.fee_min}–₹${tp.fee_max}/hr`) : "-";
+  const feeLabel = tp
+    ? tp.fee_min === tp.fee_max
+      ? `₹${tp.fee_min}/hr`
+      : `₹${tp.fee_min}–₹${tp.fee_max}/hr`
+    : "-";
 
   return (
     <div className="space-y-6">
@@ -259,21 +290,30 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
 
       {/* Requests Section */}
       <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-[#1A1A1A] pb-4 border-b border-border/80">Requests</h2>
+        <h2 className="text-lg font-bold text-[#1A1A1A] pb-4 border-b border-border/80">
+          Requests
+        </h2>
 
         <div className="mt-4 divide-y divide-border/50">
           {requests.map((r, index) => {
             const studentName = r.profiles?.full_name || "A Student";
             const grade = r.profiles?.student_profiles?.class_grade || "Any Grade";
-            const subjects = (r.profiles?.student_profiles?.subjects_of_interest ?? []).join(", ") || "Any Subject";
+            const subjects =
+              (r.profiles?.student_profiles?.subjects_of_interest ?? []).join(", ") ||
+              "Any Subject";
 
             return (
-              <div key={r.id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 first:pt-0 last:pb-0">
+              <div
+                key={r.id}
+                className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 first:pt-0 last:pb-0"
+              >
                 <div className="flex items-start gap-2.5">
                   <span className="text-[#1A1A1A] font-semibold text-sm mt-0.5">{index + 1}.</span>
                   <div>
                     <h3 className="font-bold text-sm text-[#1A1A1A]">{studentName}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{grade} | {subjects}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {grade} | {subjects}
+                    </p>
                     {r.phone && r.status === "accepted" && (
                       <p className="text-xs font-semibold text-[#4665FF] mt-1">Phone: {r.phone}</p>
                     )}
@@ -319,7 +359,9 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
           })}
 
           {requests.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">No requests received yet.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No requests received yet.
+            </p>
           )}
         </div>
       </div>
@@ -336,7 +378,9 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
   const navigate = useNavigate();
   const [tp, setTp] = useState<any>(null);
   const [subjects, setSubjects] = useState<any[]>([]);
-  const [profileSubTab, setProfileSubTab] = useState<"personal" | "qualifications" | "availability">("personal");
+  const [profileSubTab, setProfileSubTab] = useState<
+    "personal" | "qualifications" | "availability"
+  >("personal");
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -346,7 +390,10 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
       setEmail(u.user.email ?? null);
       const [tpRes, sRes] = await Promise.all([
         supabase.from("teacher_profiles").select("*").eq("user_id", u.user.id).maybeSingle(),
-        supabase.from("teacher_subjects").select("subject, level, board").eq("teacher_id", u.user.id),
+        supabase
+          .from("teacher_subjects")
+          .select("subject, level, board")
+          .eq("teacher_id", u.user.id),
       ]);
       setTp(tpRes.data);
       setSubjects((sRes.data as any[]) ?? []);
@@ -356,7 +403,10 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
   async function toggleActive(v: boolean) {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    const { error } = await supabase.from("teacher_profiles").update({ is_active: v }).eq("user_id", u.user.id);
+    const { error } = await supabase
+      .from("teacher_profiles")
+      .update({ is_active: v })
+      .eq("user_id", u.user.id);
     if (error) return toast.error(error.message);
     setTp((p: any) => ({ ...p, is_active: v }));
     toast.success(v ? "Listing reactivated." : "Listing deactivated.");
@@ -368,7 +418,9 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
     <div className="space-y-6">
       {/* Profile Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A] font-display">Profile Details</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A] font-display">
+          Profile Details
+        </h2>
         <div className="flex items-center gap-2">
           <Button
             onClick={() => setActiveTab("home")}
@@ -433,7 +485,11 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
               <ProfileItem label="Gender" value={tp?.gender} className="capitalize" />
               <ProfileItem label="City" value={me?.city} />
               <ProfileItem label="Area" value={me?.area} />
-              <ProfileItem label="Biography" value={tp?.bio} className="md:col-span-2 leading-relaxed" />
+              <ProfileItem
+                label="Biography"
+                value={tp?.bio}
+                className="md:col-span-2 leading-relaxed"
+              />
             </div>
           </div>
         )}
@@ -442,12 +498,25 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
           <div className="space-y-4">
             <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Qualifications & Experience</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <ProfileItem label="Years of Experience" value={tp?.years_experience ? `${tp.years_experience} years` : "-"} />
+              <ProfileItem
+                label="Years of Experience"
+                value={tp?.years_experience ? `${tp.years_experience} years` : "-"}
+              />
               <ProfileItem
                 label="Fee Range"
-                value={tp ? (tp.fee_min === tp.fee_max ? `₹${tp.fee_min}/hr` : `₹${tp.fee_min}–₹${tp.fee_max}/hr`) : "-"}
+                value={
+                  tp
+                    ? tp.fee_min === tp.fee_max
+                      ? `₹${tp.fee_min}/hr`
+                      : `₹${tp.fee_min}–₹${tp.fee_max}/hr`
+                    : "-"
+                }
               />
-              <ProfileItem label="Subjects Taught" value={subjectNames || "-"} className="md:col-span-2" />
+              <ProfileItem
+                label="Subjects Taught"
+                value={subjectNames || "-"}
+                className="md:col-span-2"
+              />
             </div>
           </div>
         )}
@@ -457,10 +526,16 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
             <div>
               <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Availability Parameters</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <ProfileItem label="Teaching Mode" value={tp?.mode === "both" ? "Online & In-Person" : tp?.mode} className="capitalize" />
+                <ProfileItem
+                  label="Teaching Mode"
+                  value={tp?.mode === "both" ? "Online & In-Person" : tp?.mode}
+                  className="capitalize"
+                />
                 <div className="rounded-xl border border-border bg-slate-50/50 p-4 flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Listing Visibility</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Listing Visibility
+                    </p>
                     <p className="mt-1 text-sm font-bold text-[#1A1A1A]">
                       {tp?.is_active ? "Visible in search results" : "Hidden from search"}
                     </p>
@@ -476,7 +551,15 @@ function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
   );
 }
 
-function ProfileItem({ label, value, className }: { label: string; value: string | null | undefined; className?: string }) {
+function ProfileItem({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: string | null | undefined;
+  className?: string;
+}) {
   return (
     <div className={`rounded-xl border border-border bg-slate-50/50 p-4 ${className || ""}`}>
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -499,7 +582,9 @@ function LearnerDashboard({ me }: { me: any }) {
       try {
         const { data, error } = await supabase
           .from("teacher_profiles")
-          .select("user_id, bio, years_experience, fee_min, fee_max, mode, rating_avg, rating_count, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject, level, board)")
+          .select(
+            "user_id, bio, years_experience, fee_min, fee_max, mode, rating_avg, rating_count, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject, level, board)",
+          )
           .eq("is_active", true);
         if (error) throw error;
         setTutors(data ?? []);
@@ -516,7 +601,11 @@ function LearnerDashboard({ me }: { me: any }) {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-      const { data: prof } = await supabase.from("profiles").select("city").eq("id", u.user.id).maybeSingle();
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("city")
+        .eq("id", u.user.id)
+        .maybeSingle();
       if (prof?.city) {
         setLocationQuery(prof.city);
       }
@@ -531,7 +620,9 @@ function LearnerDashboard({ me }: { me: any }) {
       list = list.filter((t) => {
         const fullName = t.profiles?.full_name?.toLowerCase() ?? "";
         const bio = t.bio?.toLowerCase() ?? "";
-        const subjects = (t.teacher_subjects ?? []).map((s: any) => s.subject?.toLowerCase()).join(" ");
+        const subjects = (t.teacher_subjects ?? [])
+          .map((s: any) => s.subject?.toLowerCase())
+          .join(" ");
         return fullName.includes(q) || bio.includes(q) || subjects.includes(q);
       });
     }
@@ -603,15 +694,31 @@ function LearnerDashboard({ me }: { me: any }) {
           <div className="flex items-center gap-2 pt-2 text-xs text-muted-foreground border-t border-slate-100">
             <span className="font-semibold">Applied Filters :</span>
             {searchQuery && (
-              <Badge variant="secondary" className="bg-[#4665FF]/5 text-[#4665FF] border-0 rounded-full px-2.5 py-0.5 flex items-center gap-1">
+              <Badge
+                variant="secondary"
+                className="bg-[#4665FF]/5 text-[#4665FF] border-0 rounded-full px-2.5 py-0.5 flex items-center gap-1"
+              >
                 Keyword: "{searchQuery}"
-                <button onClick={() => setSearchQuery("")} className="hover:text-red-500 font-bold ml-1">×</button>
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="hover:text-red-500 font-bold ml-1"
+                >
+                  ×
+                </button>
               </Badge>
             )}
             {locationQuery && (
-              <Badge variant="secondary" className="bg-[#4665FF]/5 text-[#4665FF] border-0 rounded-full px-2.5 py-0.5 flex items-center gap-1">
+              <Badge
+                variant="secondary"
+                className="bg-[#4665FF]/5 text-[#4665FF] border-0 rounded-full px-2.5 py-0.5 flex items-center gap-1"
+              >
                 Location: {locationQuery}
-                <button onClick={() => setLocationQuery("")} className="hover:text-red-500 font-bold ml-1">×</button>
+                <button
+                  onClick={() => setLocationQuery("")}
+                  className="hover:text-red-500 font-bold ml-1"
+                >
+                  ×
+                </button>
               </Badge>
             )}
           </div>
@@ -628,7 +735,9 @@ function LearnerDashboard({ me }: { me: any }) {
         <div className="bg-white rounded-2xl border border-border p-16 text-center shadow-sm">
           <SlidersHorizontal className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-[#1A1A1A]">No tutors found</h3>
-          <p className="text-sm text-muted-foreground mt-1">Try relaxing your search terms or changing the locality filter.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Try relaxing your search terms or changing the locality filter.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -644,23 +753,34 @@ function LearnerDashboard({ me }: { me: any }) {
 function TutorGridCard({ tutor }: { tutor: any }) {
   const rating = Number(tutor.rating_avg || 0).toFixed(1);
   const subjects = (tutor.teacher_subjects ?? []).map((s: any) => s.subject).join(", ");
-  const feeLabel = tutor.fee_min === tutor.fee_max ? `₹${tutor.fee_min}/hr` : `₹${tutor.fee_min}–${tutor.fee_max}/hr`;
+  const feeLabel =
+    tutor.fee_min === tutor.fee_max
+      ? `₹${tutor.fee_min}/hr`
+      : `₹${tutor.fee_min}–${tutor.fee_max}/hr`;
 
   return (
     <div className="bg-white rounded-2xl border border-border p-5 text-center flex flex-col justify-between hover:shadow-md hover:border-[#4665FF]/20 transition-all shadow-sm">
       <div>
         <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center mx-auto mb-4 border border-border overflow-hidden shrink-0">
           {tutor.profiles?.avatar_url ? (
-            <img src={tutor.profiles.avatar_url} alt={tutor.profiles.full_name} className="w-full h-full object-cover" />
+            <img
+              src={tutor.profiles.avatar_url}
+              alt={tutor.profiles.full_name}
+              className="w-full h-full object-cover"
+            />
           ) : (
             <User className="h-10 w-10 text-slate-400" />
           )}
         </div>
-        <h3 className="text-base font-bold text-[#1A1A1A] line-clamp-1">{tutor.profiles?.full_name || "Tutor Profile"}</h3>
+        <h3 className="text-base font-bold text-[#1A1A1A] line-clamp-1">
+          {tutor.profiles?.full_name || "Tutor Profile"}
+        </h3>
         <p className="text-xs text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
           <MapPin className="h-3 w-3 shrink-0 text-[#4665FF]" />
           <span className="truncate">
-            {tutor.profiles?.area ? `${tutor.profiles.area}, ${tutor.profiles.city}` : tutor.profiles?.city || "Local"}
+            {tutor.profiles?.area
+              ? `${tutor.profiles.area}, ${tutor.profiles.city}`
+              : tutor.profiles?.city || "Local"}
           </span>
         </p>
       </div>
@@ -668,17 +788,23 @@ function TutorGridCard({ tutor }: { tutor: any }) {
       <div className="mt-4 pt-4 border-t border-border/50 text-left space-y-2.5">
         {subjects && (
           <div>
-            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Subjects</p>
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Subjects
+            </p>
             <p className="text-xs text-foreground/80 font-medium line-clamp-1 mt-0.5">{subjects}</p>
           </div>
         )}
         <div className="flex justify-between items-center text-xs">
           <div>
-            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Hourly Fee</p>
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Hourly Fee
+            </p>
             <p className="font-semibold text-foreground/90 mt-0.5">{feeLabel}</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">Rating</p>
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Rating
+            </p>
             <p className="font-bold text-[#4665FF] flex items-center justify-end gap-0.5 mt-0.5">
               <Star className="h-3.5 w-3.5 fill-current text-[#4665FF]" />
               {rating}
@@ -687,8 +813,14 @@ function TutorGridCard({ tutor }: { tutor: any }) {
         </div>
       </div>
 
-      <Button asChild size="sm" className="w-full mt-5 rounded-full bg-[#4665FF] text-white hover:bg-[#4665FF]/95 font-medium transition-all shadow-sm">
-        <Link to="/tutors/$id" params={{ id: tutor.user_id }}>View Profile</Link>
+      <Button
+        asChild
+        size="sm"
+        className="w-full mt-5 rounded-full bg-[#4665FF] text-white hover:bg-[#4665FF]/95 font-medium transition-all shadow-sm"
+      >
+        <Link to="/tutors/$id" params={{ id: tutor.user_id }}>
+          View Profile
+        </Link>
       </Button>
     </div>
   );
@@ -701,7 +833,11 @@ function LearnerProfileTab({ me }: { me: any }) {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-      const { data: spRes } = await supabase.from("student_profiles").select("*").eq("user_id", u.user.id).maybeSingle();
+      const { data: spRes } = await supabase
+        .from("student_profiles")
+        .select("*")
+        .eq("user_id", u.user.id)
+        .maybeSingle();
       setSp(spRes);
     })();
   }, []);
@@ -710,8 +846,12 @@ function LearnerProfileTab({ me }: { me: any }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">Your Learning Profile</h2>
-          <p className="text-sm text-muted-foreground">Manage your grade level and subject interests.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">
+            Your Learning Profile
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Manage your grade level and subject interests.
+          </p>
         </div>
         <Button asChild className="bg-[#4665FF] hover:bg-[#4665FF]/90 rounded-full">
           <Link to="/onboarding/learner">
@@ -723,13 +863,22 @@ function LearnerProfileTab({ me }: { me: any }) {
       {sp ? (
         <div className="bg-white rounded-2xl border border-border p-6 grid gap-4 md:grid-cols-3 shadow-sm">
           <Stat label="Grade / Level" value={sp.class_grade || "-"} />
-          <Stat label="Mode Preference" value={sp.mode_preference === "both" ? "Online & In-person" : sp.mode_preference} />
+          <Stat
+            label="Mode Preference"
+            value={sp.mode_preference === "both" ? "Online & In-person" : sp.mode_preference}
+          />
           {sp.subjects_of_interest && sp.subjects_of_interest.length > 0 ? (
             <div className="md:col-span-3 mt-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subjects of Interest</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Subjects of Interest
+              </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {sp.subjects_of_interest.map((sub: string, i: number) => (
-                  <Badge key={i} variant="secondary" className="bg-[#4665FF]/10 text-[#4665FF] border-0">
+                  <Badge
+                    key={i}
+                    variant="secondary"
+                    className="bg-[#4665FF]/10 text-[#4665FF] border-0"
+                  >
                     {sub}
                   </Badge>
                 ))}
@@ -737,7 +886,9 @@ function LearnerProfileTab({ me }: { me: any }) {
             </div>
           ) : (
             <div className="md:col-span-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subjects of Interest</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Subjects of Interest
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">No subjects added yet.</p>
             </div>
           )}
