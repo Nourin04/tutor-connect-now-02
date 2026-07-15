@@ -20,6 +20,7 @@ import {
   Eye,
 } from "lucide-react";
 import { fetchMyRoles } from "@/lib/auth-helpers";
+import { capitalize } from "@/lib/string-helpers";
 
 export const Route = createFileRoute("/tutors/$id")({
   head: () => ({
@@ -179,11 +180,10 @@ function TutorProfilePage() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h1 className="text-2xl font-bold">{tutor.profiles?.full_name}</h1>
+                      <h1 className="text-2xl font-bold">{tutor.profiles?.full_name ? capitalize(tutor.profiles.full_name) : ""}</h1>
                       <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                         <MapPin className="h-3.5 w-3.5" />
-                        {[tutor.profiles?.area, tutor.profiles?.city].filter(Boolean).join(", ") ||
-                          "Location not set"}
+                        {[tutor.profiles?.area, tutor.profiles?.city].filter(Boolean).map(capitalize).join(", ") || "Location not set"}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -205,19 +205,11 @@ function TutorProfilePage() {
 
             {/* Qualifications */}
             <Section title="Qualifications" icon={GraduationCap}>
-              <Row label="Highest degree" value={tutor.highest_degree || "-"} />
-              <Row label="University / Institution" value={tutor.university || "-"} />
-              <Row
-                label="Years of experience"
-                value={
-                  <span>
-                    <span className="font-display font-semibold">{tutor.years_experience}</span>{" "}
-                    year{tutor.years_experience === 1 ? "" : "s"}
-                  </span>
-                }
-              />
+              <Row label="Highest degree" value={tutor.highest_degree ? capitalize(tutor.highest_degree) : "-"} />
+              <Row label="University / Institution" value={tutor.university ? capitalize(tutor.university) : "-"} />
+              <Row label="Years of experience" value={<span><span className="font-display font-semibold">{tutor.years_experience}</span> year{tutor.years_experience === 1 ? "" : "s"}</span>} />
               {(tutor.certifications ?? []).length > 0 && (
-                <Row label="Certifications" value={tutor.certifications.join(", ")} />
+                <Row label="Certifications" value={tutor.certifications.map(capitalize).join(", ")} />
               )}
               {(tutor.other_experience ?? []).length > 0 && (
                 <div className="border-t border-border pt-3">
@@ -225,12 +217,7 @@ function TutorProfilePage() {
                     Other experience
                   </p>
                   <ul className="mt-2 space-y-1 text-sm">
-                    {tutor.other_experience.map((e: string, i: number) => (
-                      <li key={i} className="flex gap-2">
-                        <Briefcase className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />
-                        {e}
-                      </li>
-                    ))}
+                    {tutor.other_experience.map((e: string, i: number) => <li key={i} className="flex gap-2"><Briefcase className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />{capitalize(e)}</li>)}
                   </ul>
                 </div>
               )}
@@ -241,10 +228,8 @@ function TutorProfilePage() {
               <div className="grid gap-2 sm:grid-cols-2">
                 {(tutor.teacher_subjects ?? []).map((s: any, i: number) => (
                   <div key={i} className="rounded-xl border border-border bg-background p-3">
-                    <p className="font-semibold">{s.subject}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {s.level} · {s.board}
-                    </p>
+                    <p className="font-semibold">{capitalize(s.subject)}</p>
+                    <p className="text-xs text-muted-foreground">{s.level} · {s.board}</p>
                   </div>
                 ))}
                 {(tutor.teacher_subjects ?? []).length === 0 && (
@@ -255,14 +240,10 @@ function TutorProfilePage() {
 
             {/* Availability */}
             <Section title="Availability" icon={Clock}>
-              <Row label="Days" value={(tutor.available_days ?? []).join(", ") || "-"} />
+              <Row label="Days" value={(tutor.available_days ?? []).map(capitalize).join(", ") || "-"} />
               <Row label="Time slots" value={(tutor.time_slots ?? []).join(", ") || "-"} />
-              <Row label="Mode" value={tutor.mode === "both" ? "Online & in-person" : tutor.mode} />
-              <Row
-                label="Languages"
-                value={(tutor.languages ?? []).join(", ") || "-"}
-                icon={Languages}
-              />
+              <Row label="Mode" value={tutor.mode === "both" ? "Online & in-person" : capitalize(tutor.mode)} />
+              <Row label="Languages" value={(tutor.languages ?? []).map(capitalize).join(", ") || "-"} icon={Languages} />
             </Section>
 
             {/* Reviews */}
@@ -300,9 +281,7 @@ function TutorProfilePage() {
                 {reviews.map((r) => (
                   <li key={r.id} className="rounded-xl border border-border bg-background p-4">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">
-                        {r.profiles?.full_name ?? "A student"}
-                      </p>
+                      <p className="text-sm font-semibold">{r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A student"}</p>
                       <div className="flex gap-0.5 text-primary">
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star
