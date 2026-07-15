@@ -13,7 +13,7 @@ import {
   onboardingPathForRole,
   dashboardPathForRole,
 } from "@/lib/auth-helpers";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, User } from "lucide-react";
 
 const searchSchema = z.object({
   mode: fallback(z.enum(["signin", "signup"]), "signin").default("signin"),
@@ -110,15 +110,17 @@ function SignInForm({ setTab, setAuthLoading }: { setTab: (t: "signin" | "signup
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
-      toast.error(error.message);
+      setErrorMsg(error.message);
       return;
     }
     setAuthLoading(true);
@@ -208,6 +210,7 @@ function SignInForm({ setTab, setAuthLoading }: { setTab: (t: "signin" | "signup
               )}
             </button>
           </div>
+          {errorMsg && <p className="text-xs text-destructive mt-1.5 font-medium text-left">{errorMsg}</p>}
         </div>
 
         <Button type="submit" disabled={loading} className="w-full h-12 rounded-full bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm !mt-6">
@@ -302,7 +305,10 @@ const signupSchema = z
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
-      .max(72, "Password must be at most 72 characters"),
+      .max(72, "Password must be at most 72 characters")
+      .regex(/[0-9]/, "Password must contain at least one number")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[^a-zA-Z0-9]/, "Password must contain at least one special character"),
     confirm: z.string(),
     role: z.enum(["student", "parent", "teacher"]),
   })
@@ -398,7 +404,6 @@ function SignUpForm({
           />
           {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
         </div>
-
         <div className="space-y-1.5 text-left">
           <Label htmlFor="su-pw" className="text-sm font-semibold text-[#1A1A1A]">
             Password <span className="text-rose-500">*</span>
@@ -529,7 +534,6 @@ function RoleSelectionScreen({
         toast.error(error.message);
         return;
       }
-
       if (data.session) {
         setAuthLoading(true);
         toast.success("Account created and signed in!");

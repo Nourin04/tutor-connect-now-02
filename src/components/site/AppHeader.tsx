@@ -110,13 +110,13 @@ export function AppHeader() {
                       {fullName ? capitalize(fullName) : "User Profile"}
                     </span>
                     <span className="text-xs text-muted-foreground truncate">{email}</span>
-                    {role !== "student" && role !== "parent" && (
+                    {role === "admin" && (
                       <span className="text-[10px] text-primary/80 font-semibold uppercase tracking-wider mt-1">
-                        Role: {role ?? "user"}
+                        Role: {role}
                       </span>
                     )}
                   </div>
-                  {role !== "student" && role !== "parent" && (
+                  {role === "admin" && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
