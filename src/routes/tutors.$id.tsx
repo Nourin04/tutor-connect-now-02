@@ -117,11 +117,15 @@ function TutorProfilePage() {
     toast.success("Contact request sent to the tutor.");
   }
 
+  const [activeSubTab, setActiveSubTab] = useState<"about" | "qualifications" | "availability" | "reviews">("about");
+
+  const learner = me?.roles?.includes("student") || me?.roles?.includes("parent");
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <Skeleton className="h-40 w-full rounded-2xl" />
           <Skeleton className="mt-4 h-60 w-full rounded-2xl" />
         </div>
@@ -142,17 +146,13 @@ function TutorProfilePage() {
     );
   }
 
-  const learner = me && (me.roles.includes("student") || me.roles.includes("parent"));
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col justify-between">
       <AppHeader />
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <Link to="/tutors" className="text-sm text-muted-foreground hover:text-primary">← Back to all tutors</Link>
-
+      <main className="mx-auto max-w-7xl w-full px-4 py-10 sm:px-6 lg:px-8">
+        <Link to="/tutors" className="text-sm text-muted-foreground hover:text-primary transition-all">← Back to all tutors</Link>
         <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
-            {/* Header */}
             <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary-soft text-2xl font-bold text-primary">
@@ -173,16 +173,21 @@ function TutorProfilePage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Star className="h-5 w-5 fill-primary text-primary" />
-                      <span className="text-lg font-semibold font-display">{Number(tutor.rating_avg).toFixed(1)}</span>
-                      <span className="text-sm text-muted-foreground font-display">({tutor.rating_count} reviews)</span>
+                      {Number(tutor.rating_avg) > 0 ? (
+                        <>
+                          <span className="text-lg font-semibold font-display">{Number(tutor.rating_avg).toFixed(1)}</span>
+                          <span className="text-sm text-muted-foreground font-display">({tutor.rating_count} reviews)</span>
+                        </>
+                      ) : (
+                        <span className="text-sm text-muted-foreground font-semibold">New tutor</span>
+                      )}
                     </div>
                   </div>
-                  {tutor.bio && <p className="mt-4 text-sm leading-relaxed text-foreground/90">{tutor.bio}</p>}
+                  {tutor.bio && <p className="mt-4 text-sm leading-relaxed text-foreground/80 font-normal">{tutor.bio}</p>}
                 </div>
               </div>
             </section>
 
-            {/* Qualifications */}
             <Section title="Qualifications" icon={GraduationCap}>
               <Row label="Highest degree" value={tutor.highest_degree ? capitalize(tutor.highest_degree) : "-"} />
               <Row label="University / Institution" value={tutor.university ? capitalize(tutor.university) : "-"} />
@@ -193,27 +198,25 @@ function TutorProfilePage() {
               {(tutor.other_experience ?? []).length > 0 && (
                 <div className="border-t border-border pt-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Other experience</p>
-                  <ul className="mt-2 space-y-1 text-sm">
+                  <ul className="mt-2 space-y-1 text-sm font-normal">
                     {tutor.other_experience.map((e: string, i: number) => <li key={i} className="flex gap-2"><Briefcase className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />{capitalize(e)}</li>)}
                   </ul>
                 </div>
               )}
             </Section>
 
-            {/* Subjects */}
             <Section title="Subjects & boards">
               <div className="grid gap-2 sm:grid-cols-2">
                 {(tutor.teacher_subjects ?? []).map((s: any, i: number) => (
                   <div key={i} className="rounded-xl border border-border bg-background p-3">
                     <p className="font-semibold">{capitalize(s.subject)}</p>
-                    <p className="text-xs text-muted-foreground">{s.level} · {s.board}</p>
+                    <p className="text-xs text-muted-foreground font-normal">{s.level} · {s.board}</p>
                   </div>
                 ))}
                 {(tutor.teacher_subjects ?? []).length === 0 && <p className="text-sm text-muted-foreground">No subjects listed yet.</p>}
               </div>
             </Section>
 
-            {/* Availability */}
             <Section title="Availability" icon={Clock}>
               <Row label="Days" value={(tutor.available_days ?? []).map(capitalize).join(", ") || "-"} />
               <Row label="Time slots" value={(tutor.time_slots ?? []).join(", ") || "-"} />
@@ -221,11 +224,10 @@ function TutorProfilePage() {
               <Row label="Languages" value={(tutor.languages ?? []).map(capitalize).join(", ") || "-"} icon={Languages} />
             </Section>
 
-            {/* Reviews */}
             <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold">Reviews ({reviews.length})</h2>
 
-              {learner && hasContactEvent && (
+              {learner && hasContactEvent && requestStatus === "accepted" && (
                 <ReviewForm
                   teacherId={id}
                   existing={myReview}
@@ -238,20 +240,20 @@ function TutorProfilePage() {
                   }}
                 />
               )}
-              {learner && !hasContactEvent && (
-                <p className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">
-                  Reveal this tutor's contact details first to leave a review.
+              {learner && requestStatus !== "accepted" && (
+                <p className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground font-normal">
+                  Reviews are only allowed after the tutor has accepted your contact request.
                 </p>
               )}
               {!me && (
-                <p className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">
+                <p className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground font-normal">
                   <Link to="/auth" className="font-semibold text-primary">Sign in</Link> as a student or parent to leave a review.
                 </p>
               )}
 
-              <ul className="mt-6 space-y-4">
+              <ul className="mt-6 space-y-4 font-normal">
                 {reviews.map((r) => (
-                  <li key={r.id} className="rounded-xl border border-border bg-background p-4">
+                  <li key={r.id} className="rounded-xl border border-border bg-background p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold">{r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A student"}</p>
                       <div className="flex gap-0.5 text-primary">
@@ -261,7 +263,7 @@ function TutorProfilePage() {
                       </div>
                     </div>
                     {r.comment && <p className="mt-2 text-sm text-foreground/85">{r.comment}</p>}
-                    <p className="mt-2 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
+                    <p className="mt-2 text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
                   </li>
                 ))}
                 {reviews.length === 0 && <p className="text-sm text-muted-foreground">No reviews yet. Be the first to share your experience!</p>}
@@ -269,7 +271,6 @@ function TutorProfilePage() {
             </section>
           </div>
 
-          {/* Sidebar */}
           <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
             <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Fees</p>
@@ -280,9 +281,17 @@ function TutorProfilePage() {
 
               <div className="mt-5">
                 {!me ? (
-                  <Button asChild className="w-full">
-                    <Link to="/auth">Sign in to contact</Link>
-                  </Button>
+                  <div className="space-y-2.5">
+                    <Button 
+                      onClick={() => navigate({ to: "/auth", search: { mode: "signin", redirect: `/tutors/${id}` } })}
+                      className="w-full flex items-center justify-center gap-2"
+                    >
+                      <Eye className="h-4 w-4" /> Request Contact
+                    </Button>
+                    <p className="text-center text-xs text-muted-foreground font-normal">
+                      Please <Link to="/auth" search={{ mode: "signin", redirect: `/tutors/${id}` }} className="font-semibold text-primary underline hover:text-primary/95 transition-all">sign in</Link> to contact this tutor.
+                    </p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     <div className="space-y-2.5 rounded-xl border border-border bg-surface p-3 text-sm">
@@ -293,18 +302,29 @@ function TutorProfilePage() {
                         </a>
                       </div>
                       {requestStatus === "accepted" && (
-                        <div className="flex items-center gap-2 border-t border-border/50 pt-2.5">
-                          <Phone className="h-4 w-4 text-primary" />
-                          <a className="hover:underline" href={`tel:${phone}`}>
-                            {phone || "-"}
-                          </a>
-                        </div>
+                        <>
+                          <div className="flex items-center gap-2 border-t border-border/50 pt-2.5">
+                            <Phone className="h-4 w-4 text-primary" />
+                            <a className="hover:underline font-semibold" href={`tel:${phone}`}>
+                              {phone || "-"}
+                            </a>
+                          </div>
+                          {phone && (
+                            <div className="pt-2">
+                              <Button asChild variant="outline" size="sm" className="w-full text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200">
+                                <a href={`https://wa.me/${phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer">
+                                  Chat on WhatsApp
+                                </a>
+                              </Button>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
 
                     {requestStatus === "none" && (
                       <Button className="w-full" onClick={revealContact}>
-                        <Eye className="mr-2 h-4 w-4" /> Request phone number
+                        <Eye className="mr-2 h-4 w-4" /> Request Contact
                       </Button>
                     )}
                     {requestStatus === "pending" && (
@@ -319,12 +339,12 @@ function TutorProfilePage() {
                     )}
                     {requestStatus === "accepted" && (
                       <div className="rounded-xl bg-green-500/10 p-2 text-center text-xs font-semibold text-green-600 dark:text-green-400">
-                        ✓ Request accepted
+                        Request accepted 🎉
                       </div>
                     )}
                   </div>
                 )}
-                <p className="mt-3 text-xs text-muted-foreground">
+                <p className="mt-3 text-xs text-muted-foreground font-normal">
                   TutorConnect doesn't charge any fee. Lessons are arranged directly between you and the tutor.
                 </p>
               </div>

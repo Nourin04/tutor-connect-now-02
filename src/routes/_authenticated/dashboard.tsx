@@ -28,7 +28,7 @@ function DashboardPage() {
   const [role, setRole] = useState<AppRole | null>(null);
   const [me, setMe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"home" | "profile">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "requests" | "saved" | "profile">("home");
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -133,13 +133,13 @@ function DashboardPage() {
       </header>
 
       {/* Main Layout Container */}
-      <div className="flex-1 flex flex-col md:flex-row">
+      <div className="flex-1 flex flex-col md:flex-row animate-in fade-in duration-300">
         {/* Sidebar Nav */}
         <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-border bg-white flex flex-col justify-between p-5 shrink-0">
           <div className="space-y-1.5">
             <button
               onClick={() => setActiveTab("home")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === "home"
                   ? "bg-[#4665FF]/10 text-[#4665FF]"
                   : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
@@ -149,8 +149,32 @@ function DashboardPage() {
               Home
             </button>
             <button
+              onClick={() => setActiveTab("requests")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === "requests"
+                  ? "bg-[#4665FF]/10 text-[#4665FF]"
+                  : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
+              }`}
+            >
+              <MessageCircle className="h-4 w-4" />
+              Requests Inbox
+            </button>
+            {role !== "teacher" && (
+              <button
+                onClick={() => setActiveTab("saved")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                  activeTab === "saved"
+                    ? "bg-[#4665FF]/10 text-[#4665FF]"
+                    : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
+                }`}
+              >
+                <Star className="h-4 w-4" />
+                Saved Tutors
+              </button>
+            )}
+            <button
               onClick={() => setActiveTab("profile")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === "profile"
                   ? "bg-[#4665FF]/10 text-[#4665FF]"
                   : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
@@ -175,13 +199,21 @@ function DashboardPage() {
           {role === "teacher" ? (
             activeTab === "home" ? (
               <TeacherDashboard me={me} setActiveTab={setActiveTab} />
+            ) : activeTab === "requests" ? (
+              <TeacherRequestsView />
             ) : (
               <TeacherProfileTab me={me} setActiveTab={setActiveTab} />
             )
           ) : activeTab === "home" ? (
             <LearnerDashboard me={me} />
+          ) : activeTab === "requests" ? (
+            <LearnerRequestsView />
+          ) : activeTab === "saved" ? (
+            <LearnerSavedTutorsView />
           ) : (
-            <LearnerProfileTab me={me} />
+            <div className="max-w-4xl mx-auto">
+              <LearnerProfileTab me={me} />
+            </div>
           )}
         </main>
       </div>
@@ -192,7 +224,7 @@ function DashboardPage() {
 /* ---------------- Teacher views ---------------- */
 interface TeacherDashboardProps {
   me: any;
-  setActiveTab: (tab: "home" | "profile") => void;
+  setActiveTab: (tab: "home" | "profile" | "requests" | "saved") => void;
 }
 
 function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
@@ -815,6 +847,336 @@ function LearnerProfileTab({ me }: { me: any }) {
   );
 }
 
+/* ---------------- Request lifecycle & inbox views ---------------- */
+
+function TeacherRequestsView() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data } = await supabase
+        .from("contact_events")
+        .select(`
+          id, 
+          status, 
+          created_at, 
+          viewer_id, 
+          profiles:profiles!contact_events_viewer_id_fkey(
+            full_name, 
+            email, 
+            student_profiles:student_profiles(class_grade, subjects_of_interest)
+          )
+        `)
+        .eq("teacher_id", u.user.id)
+        .order("created_at", { ascending: false });
+
+      const reqs = (data as any[]) ?? [];
+      const acceptedIds = reqs.filter((r) => r.status === "accepted").map((r) => r.viewer_id);
+
+      let phonesMap: Record<string, string> = {};
+      if (acceptedIds.length > 0) {
+        const { data: phones } = await supabase
+          .from("user_phones")
+          .select("user_id, phone")
+          .in("user_id", acceptedIds);
+        (phones ?? []).forEach((p) => {
+          phonesMap[p.user_id] = p.phone;
+        });
+      }
+
+      setRequests(reqs.map(r => ({ ...r, phone: phonesMap[r.viewer_id] || null })));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateStatus(id: string, newStatus: "accepted" | "declined") {
+    const { error } = await supabase
+      .from("contact_events")
+      .update({ status: newStatus })
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`Request ${newStatus}!`);
+    load();
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading inbox…</div>;
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">Requests Inbox</h2>
+      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm space-y-4">
+        {requests.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            <p className="font-semibold text-base">No requests yet</p>
+            <p className="text-sm mt-1">When students are interested in your profile, their requests will appear here.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border/50">
+            {requests.map((r, index) => {
+              const studentName = r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A Student";
+              const grade = r.profiles?.student_profiles?.class_grade || "Any Grade";
+              const subjects = (r.profiles?.student_profiles?.subjects_of_interest ?? []).map(capitalize).join(", ") || "Any Subject";
+
+              return (
+                <div key={r.id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 first:pt-0 last:pb-0">
+                  <div>
+                    <h3 className="font-bold text-sm text-[#1A1A1A]">{studentName}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">{grade} · {subjects}</p>
+                    {r.phone && r.status === "accepted" && (
+                      <div className="mt-2 flex items-center gap-3">
+                        <p className="text-xs font-semibold text-[#4665FF]">Phone: {r.phone}</p>
+                        <a href={`https://wa.me/${r.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-xs text-green-600 hover:underline font-semibold">
+                          WhatsApp
+                        </a>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Requested on {new Date(r.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {r.status === "pending" ? (
+                      <>
+                        <Button size="sm" onClick={() => updateStatus(r.id, "accepted")} className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold">
+                          Accept
+                        </Button>
+                        <Button size="sm" onClick={() => updateStatus(r.id, "declined")} variant="outline" className="rounded-full font-semibold">
+                          Decline
+                        </Button>
+                      </>
+                    ) : (
+                      <Badge className={`capitalize rounded-full font-semibold px-3 py-1 border-0 ${r.status === "accepted" ? "bg-green-500/10 text-green-600" : "bg-slate-100/80 text-muted-foreground"}`}>
+                        {r.status}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LearnerRequestsView() {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data } = await supabase
+        .from("contact_events")
+        .select(`
+          id, 
+          status, 
+          created_at, 
+          teacher_id, 
+          teacher_profiles:teacher_profiles(
+            user_id, 
+            fee_min, 
+            fee_max, 
+            profiles:profiles!teacher_profiles_user_id_fkey(full_name, email)
+          )
+        `)
+        .eq("viewer_id", u.user.id)
+        .order("created_at", { ascending: false });
+
+      const reqs = (data as any[]) ?? [];
+      const acceptedTeacherIds = reqs.filter(r => r.status === "accepted").map(r => r.teacher_id);
+
+      let phonesMap: Record<string, string> = {};
+      if (acceptedTeacherIds.length > 0) {
+        const { data: phones } = await supabase
+          .from("user_phones")
+          .select("user_id, phone")
+          .in("user_id", acceptedTeacherIds);
+        (phones ?? []).forEach(p => {
+          phonesMap[p.user_id] = p.phone;
+        });
+      }
+
+      setRequests(reqs.map(r => ({ ...r, phone: phonesMap[r.teacher_id] || null })));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function cancelRequest(id: string) {
+    const { error } = await supabase
+      .from("contact_events")
+      .update({ status: "cancelled" })
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Request cancelled.");
+    load();
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading requests…</div>;
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">My Requests</h2>
+      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm space-y-4">
+        {requests.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            <p className="font-semibold text-base">No contact requests sent yet</p>
+            <p className="text-sm mt-1">Browse tutors and request contact details to get started.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border/50">
+            {requests.map((r) => {
+              const tutorName = r.teacher_profiles?.profiles?.full_name ? capitalize(r.teacher_profiles.profiles.full_name) : "Tutor Profile";
+              const fee = r.teacher_profiles ? (r.teacher_profiles.fee_min === r.teacher_profiles.fee_max ? `₹${r.teacher_profiles.fee_min}/hr` : `₹${r.teacher_profiles.fee_min}–₹${r.teacher_profiles.fee_max}/hr`) : "-";
+
+              return (
+                <div key={r.id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 first:pt-0 last:pb-0">
+                  <div>
+                    <h3 className="font-bold text-sm text-[#1A1A1A]">{tutorName}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Fees: {fee}</p>
+                    {r.status === "accepted" && (
+                      <div className="mt-2 text-xs space-y-1">
+                        <p className="font-medium text-foreground/85">Email: {r.teacher_profiles?.profiles?.email}</p>
+                        {r.phone && (
+                          <div className="flex items-center gap-3">
+                            <p className="font-semibold text-[#4665FF]">Phone: {r.phone}</p>
+                            <a href={`https://wa.me/${r.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline font-semibold">
+                              WhatsApp
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      Requested on {new Date(r.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge className={`capitalize rounded-full font-semibold px-3 py-1 border-0 ${r.status === "accepted" ? "bg-green-500/10 text-green-600" : r.status === "pending" ? "bg-amber-500/10 text-amber-600" : "bg-slate-100/80 text-muted-foreground"}`}>
+                      {r.status}
+                    </Badge>
+                    {r.status === "pending" && (
+                      <Button size="sm" variant="ghost" onClick={() => cancelRequest(r.id)} className="text-destructive hover:bg-red-50 rounded-full text-xs">
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LearnerSavedTutorsView() {
+  const [saved, setSaved] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data } = await supabase
+        .from("saved_tutors" as any)
+        .select(`
+          id, 
+          teacher_profiles:teacher_profiles(
+            user_id, 
+            bio, 
+            rating_avg, 
+            rating_count, 
+            fee_min, 
+            fee_max, 
+            profiles:profiles!teacher_profiles_user_id_fkey(full_name, city, area, avatar_url),
+            teacher_subjects(subject, level, board)
+          )
+        `)
+        .eq("user_id", u.user.id);
+      
+      setSaved(data ?? []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function removeSave(savedId: string) {
+    const { error } = await supabase.from("saved_tutors" as any).delete().eq("id", savedId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Removed from saved list.");
+    load();
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading saved list…</div>;
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">Saved Tutors</h2>
+      {saved.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
+          <Star className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+          <p className="font-semibold">No saved tutors yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Keep track of tutors you are interested in here.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {saved.map((s) => {
+            const t = s.teacher_profiles;
+            if (!t) return null;
+            return (
+              <div key={s.id} className="relative">
+                <TutorGridCard tutor={t} />
+                <Button variant="ghost" size="icon" onClick={() => removeSave(s.id)} className="absolute right-4 top-4 rounded-full h-8 w-8 hover:bg-slate-100 text-red-500">
+                  <Heart className="h-4 w-4 fill-current" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------------- Shared components ---------------- */
 function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
   return (
@@ -828,3 +1190,4 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
 
 // Quiet unused warning
 void dashboardPathForRole;
+
