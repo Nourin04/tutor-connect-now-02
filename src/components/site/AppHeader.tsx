@@ -133,12 +133,14 @@ export function AppHeader() {
                           Dashboard
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/tutors">
-                          <Search className="mr-2 h-4 w-4" />
-                          Find tutors
-                        </Link>
-                      </DropdownMenuItem>
+                      {role !== "teacher" && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/tutors">
+                            <Search className="mr-2 h-4 w-4" />
+                            Find tutors
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                     </>
                   )}
                 </DropdownMenuContent>

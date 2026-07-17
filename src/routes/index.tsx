@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrimaryRole, dashboardPathForRole, type AppRole } from "@/lib/auth-helpers";
+import { Brand } from "@/components/site/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -194,11 +195,7 @@ function Header() {
 }
 
 function Logo() {
-  return (
-    <Link to="/" className="flex items-center">
-      <img src={logoUrl} alt="TutorConnect" className="h-9 w-auto" />
-    </Link>
-  );
+  return <Brand className="h-9" />;
 }
 
 /* ---------- Hero ---------- */
