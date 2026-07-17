@@ -18,6 +18,7 @@ import { Eye, EyeOff, User } from "lucide-react";
 const searchSchema = z.object({
   mode: fallback(z.enum(["signin", "signup"]), "signin").default("signin"),
   role: fallback(z.enum(["student", "parent", "teacher"]), "student").default("student"),
+  redirect: z.string().optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { mode } = Route.useSearch();
+  const { mode, redirect } = Route.useSearch();
   const navigate = useNavigate();
   const [isMounted, setIsMounted] = useState(false);
   const [tab, setTab] = useState<"signin" | "signup">(mode);
@@ -55,11 +56,15 @@ function AuthPage() {
     if (!isMounted) return;
     supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
-        const role = await fetchPrimaryRole();
-        navigate({ to: dashboardPathForRole(role), replace: true });
+        if (redirect) {
+          navigate({ to: redirect, replace: true });
+        } else {
+          const role = await fetchPrimaryRole();
+          navigate({ to: dashboardPathForRole(role), replace: true });
+        }
       }
     });
-  }, [isMounted, navigate]);
+  }, [isMounted, navigate, redirect]);
 
   if (!isMounted) {
     return (
@@ -74,7 +79,7 @@ function AuthPage() {
       {authLoading && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4665FF]"></div>
-          <p className="mt-4 text-sm font-semibold text-[#1A1A1A]">Redirecting to dashboard...</p>
+          <p className="mt-4 text-sm font-semibold text-[#1A1A1A]">Redirecting...</p>
         </div>
       )}
       {/* Left side: Solid brand blue background */}
@@ -84,13 +89,14 @@ function AuthPage() {
       <div className="flex-1 md:w-[55%] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className={`w-full mx-auto transition-all duration-500 ease-in-out ${tab === "signup" && step === "choose-role" ? "max-w-[750px]" : "max-w-[400px]"}`}>
           {tab === "signin" ? (
-            <SignInForm setTab={setTab} setAuthLoading={setAuthLoading} />
+            <SignInForm setTab={setTab} setAuthLoading={setAuthLoading} redirect={redirect} />
           ) : step === "choose-role" ? (
             <RoleSelectionScreen
               formData={savedFormData}
               setStep={setStep}
               setTab={setTab}
               setAuthLoading={setAuthLoading}
+              redirect={redirect}
             />
           ) : (
             <SignUpForm
@@ -105,7 +111,7 @@ function AuthPage() {
   );
 }
 
-function SignInForm({ setTab, setAuthLoading }: { setTab: (t: "signin" | "signup") => void; setAuthLoading: (l: boolean) => void }) {
+function SignInForm({ setTab, setAuthLoading, redirect }: { setTab: (t: "signin" | "signup") => void; setAuthLoading: (l: boolean) => void; redirect?: string }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -125,8 +131,12 @@ function SignInForm({ setTab, setAuthLoading }: { setTab: (t: "signin" | "signup
     }
     setAuthLoading(true);
     toast.success("Welcome back!");
-    const role = await fetchPrimaryRole();
-    navigate({ to: dashboardPathForRole(role), replace: true });
+    if (redirect) {
+      navigate({ to: redirect, replace: true });
+    } else {
+      const role = await fetchPrimaryRole();
+      navigate({ to: dashboardPathForRole(role), replace: true });
+    }
   }
 
   async function handleGoogleSignIn() {
@@ -501,11 +511,13 @@ function RoleSelectionScreen({
   setStep,
   setTab,
   setAuthLoading,
+  redirect,
 }: {
   formData: any;
   setStep: (s: "form" | "choose-role") => void;
   setTab: (t: "signin" | "signup") => void;
   setAuthLoading: (l: boolean) => void;
+  redirect?: string;
 }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
@@ -537,7 +549,11 @@ function RoleSelectionScreen({
       if (data.session) {
         setAuthLoading(true);
         toast.success("Account created and signed in!");
-        navigate({ to: onboardingPathForRole(role), replace: true });
+        if (redirect) {
+          navigate({ to: redirect, replace: true });
+        } else {
+          navigate({ to: onboardingPathForRole(role), replace: true });
+        }
       } else {
         setLoading(null);
         toast.success("Account created! Please check your email to confirm and log in.", {
@@ -546,7 +562,7 @@ function RoleSelectionScreen({
         setTab("signin");
         navigate({
           to: "/auth",
-          search: (prev: any) => ({ ...prev, mode: "signin" }),
+          search: (prev: any) => ({ ...prev, mode: "signin", redirect }),
           replace: true,
         });
       }
