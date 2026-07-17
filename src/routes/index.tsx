@@ -228,7 +228,7 @@ function Hero() {
               them directly.
             </p>
 
-            <div className="mt-8 flex justify-center lg:justify-start gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
               {email ? (
                 <Button
                   asChild
@@ -238,15 +238,18 @@ function Hero() {
                   <Link to={dashboardPathForRole(role)}>Go to Dashboard</Link>
                 </Button>
               ) : (
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full px-8 shadow-md font-semibold"
-                >
-                  <Link to="/auth" search={{ mode: "signup" }}>
-                    Get started
-                  </Link>
-                </Button>
+                <>
+                  <Button asChild size="lg" className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full px-8 shadow-md font-semibold">
+                    <Link to="/auth" search={{ mode: "signup" }}>
+                      Get started
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline" className="rounded-full px-8 border-border hover:bg-slate-50 font-semibold">
+                    <Link to="/tutors">
+                      Browse Tutors
+                    </Link>
+                  </Button>
+                </>
               )}
             </div>
           </div>

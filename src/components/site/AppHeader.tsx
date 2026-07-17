@@ -10,13 +10,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { Brand } from "./Brand";
-import { User, LayoutDashboard, Search } from "lucide-react";
+import { User, LayoutDashboard, Search, Bell, Check } from "lucide-react";
 import {
   fetchPrimaryRole,
   type AppRole,
   dashboardPathForRole,
 } from "@/lib/auth-helpers";
 import { capitalize } from "@/lib/string-helpers";
+import { toast } from "sonner";
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -25,6 +26,10 @@ export function AppHeader() {
   const [role, setRole] = useState<AppRole | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  
+  // Notification States
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   async function loadProfile(uid: string) {
     const { data: p } = await supabase
@@ -38,6 +43,55 @@ export function AppHeader() {
     }
   }
 
+  async function loadNotifications(uid: string) {
+    try {
+      const { data, error } = await supabase
+        .from("notifications" as any)
+        .select("*")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      setNotifications(data ?? []);
+      setUnreadCount(data?.filter((n: any) => !n.is_read).length ?? 0);
+    } catch (e) {
+      console.warn("Notifications table may not exist yet:", e);
+    }
+  }
+
+  async function markAllNotificationsAsRead() {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) return;
+    try {
+      const { error } = await supabase
+        .from("notifications" as any)
+        .update({ is_read: true } as any)
+        .eq("user_id", u.user.id);
+      if (error) throw error;
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      toast.success("All notifications marked as read.");
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function markNotificationAsRead(id: string) {
+    try {
+      const { error } = await supabase
+        .from("notifications" as any)
+        .update({ is_read: true } as any)
+        .eq("id", id);
+      if (error) throw error;
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   useEffect(() => {
     setIsMounted(true);
     let mounted = true;
@@ -48,6 +102,7 @@ export function AppHeader() {
       if (data.user) {
         setRole(await fetchPrimaryRole());
         loadProfile(data.user.id);
+        loadNotifications(data.user.id);
       }
     });
 
@@ -56,10 +111,13 @@ export function AppHeader() {
       if (s?.user) {
         setRole(await fetchPrimaryRole());
         loadProfile(s.user.id);
+        loadNotifications(s.user.id);
       } else {
         setRole(null);
         setFullName(null);
         setAvatarUrl(null);
+        setNotifications([]);
+        setUnreadCount(0);
       }
     });
 
@@ -77,8 +135,21 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Brand />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-6">
+          <Brand />
+          <Link to="/tutors" className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary transition-all">
+            <Search className="h-4 w-4" />
+            Browse Tutors
+          </Link>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Public Tutors search link for mobile */}
+          <Button variant="ghost" size="icon" className="sm:hidden h-9 w-9 rounded-full" asChild>
+            <Link to="/tutors">
+              <Search className="h-4 w-4" />
+            </Link>
+          </Button>
+
           {!isMounted ? (
             <>
               <Link
@@ -100,6 +171,52 @@ export function AppHeader() {
             </>
           ) : email ? (
             <div className="flex items-center gap-2">
+              {/* Notifications Bell */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full border border-border hover:bg-muted relative shrink-0">
+                    <Bell className="h-4 w-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground animate-pulse">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80 p-2 max-h-[400px] overflow-y-auto">
+                  <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/60">
+                    <span className="text-sm font-bold text-[#1A1A1A]">Notifications</span>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllNotificationsAsRead} className="text-xs text-[#4665FF] hover:underline font-semibold">
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="mt-1 divide-y divide-border/40">
+                    {notifications.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-muted-foreground">
+                        No notifications yet
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div key={n.id} className={`p-2.5 text-xs transition-colors rounded-lg flex items-start gap-2.5 ${!n.is_read ? 'bg-primary-soft/20 font-medium' : 'text-muted-foreground'}`}>
+                          <div className="flex-1">
+                            <p className="font-bold text-[#1A1A1A]">{n.title}</p>
+                            <p className="mt-0.5 text-foreground/80">{n.message}</p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleDateString()}</p>
+                          </div>
+                          {!n.is_read && (
+                            <button onClick={() => markNotificationAsRead(n.id)} className="h-5 w-5 rounded-full border border-border flex items-center justify-center hover:bg-muted" title="Mark as read">
+                              <Check className="h-3 w-3 text-[#4665FF]" />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full border border-border hover:bg-muted relative overflow-hidden shrink-0">
@@ -118,30 +235,24 @@ export function AppHeader() {
                       {fullName ? capitalize(fullName) : "User Profile"}
                     </span>
                     <span className="text-xs text-muted-foreground truncate">{email}</span>
-                    {role !== "student" && role !== "parent" && (
-                      <span className="text-[10px] text-primary/80 font-semibold uppercase tracking-wider mt-1">
-                        Role: {role ?? "user"}
-                      </span>
-                    )}
+                    <span className="text-[10px] text-primary/80 font-semibold uppercase tracking-wider mt-1">
+                      Role: {role ?? "student"}
+                    </span>
                   </div>
-                  {role !== "student" && role !== "parent" && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to={dashboardPathForRole(role)}>
-                          <LayoutDashboard className="mr-2 h-4 w-4" />
-                          Dashboard
-                        </Link>
-                      </DropdownMenuItem>
-                      {role !== "teacher" && (
-                        <DropdownMenuItem asChild>
-                          <Link to="/tutors">
-                            <Search className="mr-2 h-4 w-4" />
-                            Find tutors
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                    </>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={dashboardPathForRole(role)}>
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  {role !== "teacher" && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/tutors">
+                        <Search className="mr-2 h-4 w-4" />
+                        Find Tutors
+                      </Link>
+                    </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -179,4 +290,5 @@ export function AppHeader() {
     </header>
   );
 }
+
 

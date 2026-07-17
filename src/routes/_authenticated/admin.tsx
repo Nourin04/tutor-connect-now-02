@@ -173,33 +173,15 @@ function TutorsTable() {
               <Td>{r.profiles?.city || "-"}</Td>
               <Td>
                 <Star className="mr-1 inline h-3 w-3 fill-primary text-primary" />
-                {Number(r.rating_avg).toFixed(1)} ({r.rating_count})
-              </Td>
-              <Td>
-                ₹{r.fee_min}–{r.fee_max}
-              </Td>
-              <Td>
-                {r.is_active ? (
-                  <Badge className="bg-primary-soft text-primary border-0">Active</Badge>
+                {Number(r.rating_avg) > 0 ? (
+                  `${Number(r.rating_avg).toFixed(1)} (${r.rating_count})`
                 ) : (
-                  <Badge variant="secondary">Hidden</Badge>
+                  "New tutor"
                 )}
               </Td>
-              <Td>
-                <Button size="sm" variant="outline" onClick={() => toggle(r.user_id, r.is_active)}>
-                  {r.is_active ? (
-                    <>
-                      <EyeOff className="mr-1 h-3 w-3" />
-                      Deactivate
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="mr-1 h-3 w-3" />
-                      Reactivate
-                    </>
-                  )}
-                </Button>
-              </Td>
+              <Td>₹{r.fee_min}–{r.fee_max}</Td>
+              <Td>{r.is_active ? <Badge className="bg-primary-soft text-primary border-0">Active</Badge> : <Badge variant="secondary">Hidden</Badge>}</Td>
+              <Td><Button size="sm" variant="outline" onClick={() => toggle(r.user_id, r.is_active)}>{r.is_active ? <><EyeOff className="mr-1 h-3 w-3" />Deactivate</> : <><Eye className="mr-1 h-3 w-3" />Reactivate</>}</Button></Td>
             </tr>
           ))}
         </tbody>

@@ -15,6 +15,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TutorsIndexRouteImport } from './routes/tutors.index'
 import { Route as TutorsIdRouteImport } from './routes/tutors.$id'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -49,6 +50,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TutorsIndexRoute = TutorsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TutorsRoute,
 } as any)
 const TutorsIdRoute = TutorsIdRouteImport.update({
   id: '/$id',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/tutors/$id': typeof TutorsIdRoute
+  '/tutors/': typeof TutorsIndexRoute
   '/onboarding/learner': typeof AuthenticatedOnboardingLearnerRoute
   '/onboarding/teacher': typeof AuthenticatedOnboardingTeacherRoute
 }
@@ -95,10 +102,10 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
-  '/tutors': typeof TutorsRouteWithChildren
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/tutors/$id': typeof TutorsIdRoute
+  '/tutors': typeof TutorsIndexRoute
   '/onboarding/learner': typeof AuthenticatedOnboardingLearnerRoute
   '/onboarding/teacher': typeof AuthenticatedOnboardingTeacherRoute
 }
@@ -113,6 +120,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/tutors/$id': typeof TutorsIdRoute
+  '/tutors/': typeof TutorsIndexRoute
   '/_authenticated/onboarding/learner': typeof AuthenticatedOnboardingLearnerRoute
   '/_authenticated/onboarding/teacher': typeof AuthenticatedOnboardingTeacherRoute
 }
@@ -127,6 +135,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/tutors/$id'
+    | '/tutors/'
     | '/onboarding/learner'
     | '/onboarding/teacher'
   fileRoutesByTo: FileRoutesByTo
@@ -135,10 +144,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/privacy'
     | '/terms'
-    | '/tutors'
     | '/admin'
     | '/dashboard'
     | '/tutors/$id'
+    | '/tutors'
     | '/onboarding/learner'
     | '/onboarding/teacher'
   id:
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/tutors/$id'
+    | '/tutors/'
     | '/_authenticated/onboarding/learner'
     | '/_authenticated/onboarding/teacher'
   fileRoutesById: FileRoutesById
@@ -208,6 +218,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/tutors/': {
+      id: '/tutors/'
+      path: '/'
+      fullPath: '/tutors/'
+      preLoaderRoute: typeof TutorsIndexRouteImport
+      parentRoute: typeof TutorsRoute
     }
     '/tutors/$id': {
       id: '/tutors/$id'
@@ -266,10 +283,12 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface TutorsRouteChildren {
   TutorsIdRoute: typeof TutorsIdRoute
+  TutorsIndexRoute: typeof TutorsIndexRoute
 }
 
 const TutorsRouteChildren: TutorsRouteChildren = {
   TutorsIdRoute: TutorsIdRoute,
+  TutorsIndexRoute: TutorsIndexRoute,
 }
 
 const TutorsRouteWithChildren =
