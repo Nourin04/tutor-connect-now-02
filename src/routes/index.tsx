@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrimaryRole, dashboardPathForRole, type AppRole } from "@/lib/auth-helpers";
+import { Brand } from "@/components/site/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -113,10 +114,18 @@ function Header() {
         <div className="flex items-center gap-2">
           {!isMounted ? (
             <>
-              <Link to="/auth" search={{ mode: "signin" }} className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all">
+              <Link
+                to="/auth"
+                search={{ mode: "signin" }}
+                className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
+              >
                 Sign in
               </Link>
-              <Button size="sm" className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft" asChild>
+              <Button
+                size="sm"
+                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft"
+                asChild
+              >
                 <Link to="/auth" search={{ mode: "signup" }}>
                   Get started
                 </Link>
@@ -150,16 +159,29 @@ function Header() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button size="sm" variant="outline" onClick={signOut} className="rounded-full font-semibold">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={signOut}
+                className="rounded-full font-semibold"
+              >
                 Logout
               </Button>
             </div>
           ) : (
             <>
-              <Link to="/auth" search={{ mode: "signin" }} className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all">
+              <Link
+                to="/auth"
+                search={{ mode: "signin" }}
+                className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
+              >
                 Sign in
               </Link>
-              <Button size="sm" className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft" asChild>
+              <Button
+                size="sm"
+                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft"
+                asChild
+              >
                 <Link to="/auth" search={{ mode: "signup" }}>
                   Get started
                 </Link>
@@ -173,11 +195,7 @@ function Header() {
 }
 
 function Logo() {
-  return (
-    <Link to="/" className="flex items-center">
-      <img src={logoUrl} alt="TutorConnect" className="h-9 w-auto" />
-    </Link>
-  );
+  return <Brand className="h-9" />;
 }
 
 /* ---------- Hero ---------- */
@@ -206,15 +224,18 @@ function Hero() {
               <span className="text-primary">right around the corner.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
-              Discover local tutors in your area. Compare fees, check availability, and connect with them directly.
+              Discover local tutors in your area. Compare fees, check availability, and connect with
+              them directly.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
               {email ? (
-                <Button asChild size="lg" className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full px-8 shadow-md font-semibold">
-                  <Link to={dashboardPathForRole(role)}>
-                    Go to Dashboard
-                  </Link>
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full px-8 shadow-md font-semibold"
+                >
+                  <Link to={dashboardPathForRole(role)}>Go to Dashboard</Link>
                 </Button>
               ) : (
                 <>
@@ -243,8 +264,6 @@ function Hero() {
                 className="h-full w-full object-cover"
               />
             </div>
-
-
           </div>
         </div>
       </div>
@@ -381,8 +400,6 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-
-
 /* ---------- For teachers ---------- */
 function ForTeachers() {
   const benefits = [
@@ -410,7 +427,10 @@ function ForTeachers() {
                 ))}
               </ul>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button className="bg-white text-[#4665FF] hover:bg-white/90 rounded-full font-semibold" asChild>
+                <Button
+                  className="bg-white text-[#4665FF] hover:bg-white/90 rounded-full font-semibold"
+                  asChild
+                >
                   <Link to="/auth" search={{ mode: "signup", role: "teacher" }}>
                     Become a tutor
                   </Link>
@@ -534,9 +554,7 @@ function FAQ() {
     <section id="faq" className="py-20 sm:py-28">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-            Common questions
-          </h2>
+          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">Common questions</h2>
           <p className="mt-3 text-muted-foreground">
             Everything you need to know before getting started.
           </p>
@@ -577,12 +595,18 @@ function CTASection() {
             Start learning with a tutor who actually fits you.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-background/70">
-            Join thousands of parents and students using TutorConnect to find the right teacher,
-            in their area, at the right price.
+            Join thousands of parents and students using TutorConnect to find the right teacher, in
+            their area, at the right price.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button size="lg" className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-md" asChild>
-              <Link to="/auth" search={{ mode: "signup" }}>Find a tutor</Link>
+            <Button
+              size="lg"
+              className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-md"
+              asChild
+            >
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Find a tutor
+              </Link>
             </Button>
             <Button
               size="lg"
@@ -615,21 +639,21 @@ function Footer() {
             </p>
           </div>
           <div className="flex gap-24 sm:gap-36 md:gap-48">
-            <FooterCol 
-              title="Product" 
+            <FooterCol
+              title="Product"
               links={[
                 { label: "How it works", href: "#how" },
                 { label: "FAQ", href: "#faq" },
                 { label: "About", href: "#" },
-                { label: "Contact", href: "#" }
-              ]} 
+                { label: "Contact", href: "#" },
+              ]}
             />
-            <FooterCol 
-              title="Legal" 
+            <FooterCol
+              title="Legal"
               links={[
                 { label: "Privacy Policy", href: "/privacy" },
-                { label: "Terms of Service", href: "/terms" }
-              ]} 
+                { label: "Terms of Service", href: "/terms" },
+              ]}
             />
           </div>
         </div>
@@ -649,7 +673,10 @@ function FooterCol({ title, links }: { title: string; links: { label: string; hr
       <ul className="mt-4 space-y-2.5">
         {links.map((link) => (
           <li key={link.label}>
-            <a href={link.href} className="text-sm text-muted-foreground transition-colors hover:text-primary">
+            <a
+              href={link.href}
+              className="text-sm text-muted-foreground transition-colors hover:text-primary"
+            >
               {link.label}
             </a>
           </li>

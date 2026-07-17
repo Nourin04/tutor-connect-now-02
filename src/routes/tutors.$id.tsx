@@ -26,7 +26,10 @@ export const Route = createFileRoute("/tutors/$id")({
   head: () => ({
     meta: [
       { title: "Tutor Profile | TutorConnect" },
-      { name: "description", content: "View tutor qualifications, subjects, availability, fees, and reviews." },
+      {
+        name: "description",
+        content: "View tutor qualifications, subjects, availability, fees, and reviews.",
+      },
     ],
   }),
   component: TutorProfilePage,
@@ -34,13 +37,16 @@ export const Route = createFileRoute("/tutors/$id")({
 
 function TutorProfilePage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const [tutor, setTutor] = useState<any | null>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [me, setMe] = useState<{ id: string; roles: string[] } | null>(null);
-  const [requestStatus, setRequestStatus] = useState<"none" | "pending" | "accepted" | "declined">("none");
+  const [requestStatus, setRequestStatus] = useState<"none" | "pending" | "accepted" | "declined">(
+    "none",
+  );
   const [phone, setPhone] = useState<string | null>(null);
   const [hasContactEvent, setHasContactEvent] = useState(false);
   const [myReview, setMyReview] = useState<any | null>(null);
@@ -53,13 +59,15 @@ function TutorProfilePage() {
         supabase
           .from("teacher_profiles")
           .select(
-            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, email, city, area, avatar_url), teacher_subjects(subject, level, board)"
+            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, email, city, area, avatar_url), teacher_subjects(subject, level, board)",
           )
           .eq("user_id", id)
           .maybeSingle(),
         supabase
           .from("reviews")
-          .select("id, rating, comment, created_at, reviewer_id, profiles!reviews_reviewer_id_fkey(full_name)")
+          .select(
+            "id, rating, comment, created_at, reviewer_id, profiles!reviews_reviewer_id_fkey(full_name)",
+          )
           .eq("teacher_id", id)
           .order("created_at", { ascending: false }),
         supabase.auth.getUser(),
@@ -140,7 +148,9 @@ function TutorProfilePage() {
         <div className="mx-auto max-w-xl px-4 py-20 text-center">
           <h1 className="text-2xl font-bold">Tutor not found</h1>
           <p className="mt-2 text-muted-foreground">This profile may have been deactivated.</p>
-          <Button asChild className="mt-6"><Link to="/tutors">Back to tutors</Link></Button>
+          <Button asChild className="mt-6">
+            <Link to="/tutors">Back to tutors</Link>
+          </Button>
         </div>
       </div>
     );
@@ -157,7 +167,11 @@ function TutorProfilePage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary-soft text-2xl font-bold text-primary">
                   {tutor.profiles?.avatar_url ? (
-                    <img src={tutor.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={tutor.profiles.avatar_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     (tutor.profiles?.full_name ?? "?").slice(0, 1).toUpperCase()
                   )}
@@ -213,7 +227,9 @@ function TutorProfilePage() {
                     <p className="text-xs text-muted-foreground font-normal">{s.level} · {s.board}</p>
                   </div>
                 ))}
-                {(tutor.teacher_subjects ?? []).length === 0 && <p className="text-sm text-muted-foreground">No subjects listed yet.</p>}
+                {(tutor.teacher_subjects ?? []).length === 0 && (
+                  <p className="text-sm text-muted-foreground">No subjects listed yet.</p>
+                )}
               </div>
             </Section>
 
@@ -258,7 +274,10 @@ function TutorProfilePage() {
                       <p className="text-sm font-semibold">{r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A student"}</p>
                       <div className="flex gap-0.5 text-primary">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-3.5 w-3.5 ${i < r.rating ? "fill-primary" : "text-muted-foreground/30"}`} />
+                          <Star
+                            key={i}
+                            className={`h-3.5 w-3.5 ${i < r.rating ? "fill-primary" : "text-muted-foreground/30"}`}
+                          />
                         ))}
                       </div>
                     </div>
@@ -266,7 +285,11 @@ function TutorProfilePage() {
                     <p className="mt-2 text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
                   </li>
                 ))}
-                {reviews.length === 0 && <p className="text-sm text-muted-foreground">No reviews yet. Be the first to share your experience!</p>}
+                {reviews.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No reviews yet. Be the first to share your experience!
+                  </p>
+                )}
               </ul>
             </section>
           </div>
@@ -275,7 +298,9 @@ function TutorProfilePage() {
             <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Fees</p>
               <p className="mt-1 text-2xl font-bold font-display">
-                {tutor.fee_min === tutor.fee_max ? `₹${tutor.fee_min}` : `₹${tutor.fee_min}–${tutor.fee_max}`}
+                {tutor.fee_min === tutor.fee_max
+                  ? `₹${tutor.fee_min}`
+                  : `₹${tutor.fee_min}–${tutor.fee_max}`}
                 <span className="text-base font-normal text-muted-foreground font-sans"> / hr</span>
               </p>
 
@@ -297,7 +322,10 @@ function TutorProfilePage() {
                     <div className="space-y-2.5 rounded-xl border border-border bg-surface p-3 text-sm">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-primary" />
-                        <a className="break-all hover:underline" href={`mailto:${tutor.profiles?.email}`}>
+                        <a
+                          className="break-all hover:underline"
+                          href={`mailto:${tutor.profiles?.email}`}
+                        >
                           {tutor.profiles?.email}
                         </a>
                       </div>
@@ -357,7 +385,15 @@ function TutorProfilePage() {
   );
 }
 
-function Section({ title, icon: Icon, children }: { title: string; icon?: any; children: React.ReactNode }) {
+function Section({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon?: any;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
       <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -381,7 +417,15 @@ function Row({ label, value, icon: Icon }: { label: string; value: React.ReactNo
   );
 }
 
-function ReviewForm({ teacherId, existing, onSaved }: { teacherId: string; existing: any | null; onSaved: (r: any) => void }) {
+function ReviewForm({
+  teacherId,
+  existing,
+  onSaved,
+}: {
+  teacherId: string;
+  existing: any | null;
+  onSaved: (r: any) => void;
+}) {
   const [rating, setRating] = useState(existing?.rating ?? 5);
   const [comment, setComment] = useState(existing?.comment ?? "");
   const [saving, setSaving] = useState(false);
@@ -404,9 +448,11 @@ function ReviewForm({ teacherId, existing, onSaved }: { teacherId: string; exist
       .from("reviews")
       .upsert(
         { teacher_id: teacherId, reviewer_id, rating, comment: comment.trim() },
-        { onConflict: "teacher_id,reviewer_id" }
+        { onConflict: "teacher_id,reviewer_id" },
       )
-      .select("id, rating, comment, created_at, reviewer_id, profiles!reviews_reviewer_id_fkey(full_name)")
+      .select(
+        "id, rating, comment, created_at, reviewer_id, profiles!reviews_reviewer_id_fkey(full_name)",
+      )
       .single();
     setSaving(false);
     if (error) {
@@ -423,7 +469,9 @@ function ReviewForm({ teacherId, existing, onSaved }: { teacherId: string; exist
       <div className="mt-2 flex gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} type="button" onClick={() => setRating(n)} className="p-0.5">
-            <Star className={`h-6 w-6 ${n <= rating ? "fill-primary text-primary" : "text-muted-foreground/40"}`} />
+            <Star
+              className={`h-6 w-6 ${n <= rating ? "fill-primary text-primary" : "text-muted-foreground/40"}`}
+            />
           </button>
         ))}
       </div>

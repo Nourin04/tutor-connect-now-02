@@ -4,7 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Brand } from "@/components/site/Brand";
 import { Badge } from "@/components/ui/badge";
 import { X, User } from "lucide-react";
@@ -15,8 +21,27 @@ export const Route = createFileRoute("/_authenticated/onboarding/learner")({
   component: LearnerOnboarding,
 });
 
-const GRADES = ["Class 1-5", "Class 6-8", "Class 9-10", "Class 11-12", "Undergraduate", "Postgraduate", "Adult learner"];
-const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "English", "Hindi", "Computer Science", "Economics", "Music", "Art"];
+const GRADES = [
+  "Class 1-5",
+  "Class 6-8",
+  "Class 9-10",
+  "Class 11-12",
+  "Undergraduate",
+  "Postgraduate",
+  "Adult learner",
+];
+const SUBJECTS = [
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "English",
+  "Hindi",
+  "Computer Science",
+  "Economics",
+  "Music",
+  "Art",
+];
 
 function LearnerOnboarding() {
   const navigate = useNavigate();
@@ -25,7 +50,13 @@ function LearnerOnboarding() {
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState<"student" | "parent" | "teacher" | "admin" | null>(null);
-  const [profile, setProfile] = useState({ full_name: "", phone: "", city: "", area: "", avatar_url: "" });
+  const [profile, setProfile] = useState({
+    full_name: "",
+    phone: "",
+    city: "",
+    area: "",
+    avatar_url: "",
+  });
   const [sp, setSp] = useState({
     class_grade: "",
     mode_preference: "both" as "online" | "offline" | "both",
@@ -45,19 +76,25 @@ function LearnerOnboarding() {
       ]);
       const p = pRes.data;
       const ph = phoneRes.data;
-      if (p) setProfile({
-        full_name: p.full_name ?? "",
-        phone: ph?.phone ?? "",
-        city: p.city ?? "",
-        area: p.area ?? "",
-        avatar_url: p.avatar_url ?? "",
-      });
-      const { data: s } = await supabase.from("student_profiles").select("*").eq("user_id", u.user.id).maybeSingle();
-      if (s) setSp({
-        class_grade: s.class_grade ?? "",
-        mode_preference: s.mode_preference ?? "both",
-        subjects_of_interest: s.subjects_of_interest ?? [],
-      });
+      if (p)
+        setProfile({
+          full_name: p.full_name ?? "",
+          phone: ph?.phone ?? "",
+          city: p.city ?? "",
+          area: p.area ?? "",
+          avatar_url: p.avatar_url ?? "",
+        });
+      const { data: s } = await supabase
+        .from("student_profiles")
+        .select("*")
+        .eq("user_id", u.user.id)
+        .maybeSingle();
+      if (s)
+        setSp({
+          class_grade: s.class_grade ?? "",
+          mode_preference: s.mode_preference ?? "both",
+          subjects_of_interest: s.subjects_of_interest ?? [],
+        });
       setLoading(false);
     })();
   }, []);
@@ -145,14 +182,17 @@ function LearnerOnboarding() {
 
   if (loading) return <div className="p-10 text-center text-muted-foreground">Loading…</div>;
 
-  const intro = role === "parent"
-    ? "Tell us about the child you're searching for. We'll use this to surface better matches."
-    : "Tell us a little about yourself so we can match the right tutors.";
+  const intro =
+    role === "parent"
+      ? "Tell us about the child you're searching for. We'll use this to surface better matches."
+      : "Tell us a little about yourself so we can match the right tutors.";
 
   return (
     <div className="min-h-screen bg-surface">
       <header className="border-b border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8"><Brand /></div>
+        <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          <Brand />
+        </div>
       </header>
       <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold tracking-tight">Set up your profile</h1>
@@ -221,7 +261,14 @@ function LearnerOnboarding() {
                   <button
                     type="button"
                     key={s}
-                    onClick={() => setSp({ ...sp, subjects_of_interest: on ? sp.subjects_of_interest.filter((x) => x !== s) : [...sp.subjects_of_interest, s] })}
+                    onClick={() =>
+                      setSp({
+                        ...sp,
+                        subjects_of_interest: on
+                          ? sp.subjects_of_interest.filter((x) => x !== s)
+                          : [...sp.subjects_of_interest, s],
+                      })
+                    }
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/40"}`}
                   >
                     {s}
@@ -245,7 +292,9 @@ function LearnerOnboarding() {
           </div>
 
           <div className="pt-2">
-            <Button onClick={save} disabled={saving} className="w-full">{saving ? "Saving…" : "Save profile"}</Button>
+            <Button onClick={save} disabled={saving} className="w-full">
+              {saving ? "Saving…" : "Save profile"}
+            </Button>
           </div>
         </section>
       </main>
