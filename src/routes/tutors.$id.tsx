@@ -37,6 +37,7 @@ export const Route = createFileRoute("/tutors/$id")({
 
 function TutorProfilePage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const [tutor, setTutor] = useState<any | null>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
