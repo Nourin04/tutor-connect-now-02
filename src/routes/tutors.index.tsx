@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/site/AppHeader";
-import { AppFooter } from "@/components/site/AppFooter";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Star, MapPin, SlidersHorizontal, X, Heart } from "lucide-react";
+import { Star, MapPin, SlidersHorizontal, X, Heart, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/tutors/")({
@@ -51,6 +51,7 @@ type FilterState = {
   feeMax: number;
   minRating: number;
   sort: string;
+  favouritesOnly: boolean;
 };
 
 const DEFAULT_FILTERS: FilterState = {
@@ -65,6 +66,7 @@ const DEFAULT_FILTERS: FilterState = {
   feeMax: 5000,
   minRating: 0,
   sort: "rating",
+  favouritesOnly: false,
 };
 
 function TutorsPage() {
@@ -162,7 +164,9 @@ function TutorsPage() {
   // Client-side filter for fields that are nested
   const rows = useMemo(() => {
     const list = (query.data ?? []) as any[];
+    const savedIds = savedQuery.data ?? [];
     return list.filter((r) => {
+      if (filters.favouritesOnly && !savedIds.includes(r.user_id)) return false;
       if (filters.q && !`${r.profiles?.full_name ?? ""} ${r.bio ?? ""}`.toLowerCase().includes(filters.q.toLowerCase()))
         return false;
       if (filters.city && !`${r.profiles?.city ?? ""} ${r.profiles?.area ?? ""}`.toLowerCase().includes(filters.city.toLowerCase()))
@@ -175,7 +179,7 @@ function TutorsPage() {
       if (filters.board !== "any" && !subs.some((s: any) => s.board === filters.board)) return false;
       return true;
     });
-  }, [query.data, filters]);
+  }, [query.data, filters, savedQuery.data]);
 
   const activeCount = useMemo(() => {
     let n = 0;
@@ -189,82 +193,143 @@ function TutorsPage() {
     if (filters.language) n++;
     if (filters.feeMax < 5000) n++;
     if (filters.minRating > 0) n++;
+    if (filters.favouritesOnly) n++;
     return n;
   }, [filters]);
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <div className="border-b border-border bg-surface">
+      <div className="border-b border-border/50 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold tracking-tight">Find a tutor</h1>
-          <p className="mt-1 text-muted-foreground">
-            {rows.length} tutor{rows.length === 1 ? "" : "s"} matching your filters
+          <h1 className="text-3xl font-bold tracking-tight text-[#1A1A1A] font-display">Discover Expert Tutors</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground font-medium">
+            Explore trusted local educators tailored to your preferences. Compare profiles, ratings, and rates to find your ideal match.
           </p>
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[280px_1fr] lg:px-8">
-        {/* Filters */}
-        <aside className="space-y-5 rounded-2xl border border-border bg-card p-5 shadow-card lg:sticky lg:top-20 lg:self-start">
-          <div className="flex items-center justify-between">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+        <div className="flex justify-start">
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors duration-200"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
+          </Link>
+        </div>
+        {/* Filters Top Card */}
+        <div className="bg-card border border-border p-6 rounded-2xl shadow-card space-y-6">
+          <div className="flex items-center justify-between border-b border-border/50 pb-4">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold">Filters</h2>
+              <h2 className="text-sm font-semibold">Filter Tutors</h2>
               {activeCount > 0 && <Badge className="bg-primary-soft text-primary border-0">{activeCount}</Badge>}
             </div>
             {activeCount > 0 && (
-              <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs" onClick={() => setFilters(DEFAULT_FILTERS)}>
-                <X className="mr-1 h-3 w-3" /> Clear
+              <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs hover:bg-[#E2E8F0]/50" onClick={() => setFilters(DEFAULT_FILTERS)}>
+                <X className="mr-1 h-3 w-3" /> Clear filters
               </Button>
             )}
           </div>
 
-          <FilterRow label="Search">
-            <Input placeholder="Name or keyword" value={filters.q} onChange={(e) => set("q", e.target.value)} />
-          </FilterRow>
-          <FilterRow label="Location">
-            <Input placeholder="City or area" value={filters.city} onChange={(e) => set("city", e.target.value)} />
-          </FilterRow>
-          <FilterRow label="Subject">
-            <SelectField value={filters.subject} onChange={(v) => set("subject", v)} options={[{ value: "any", label: "Any subject" }, ...SUBJECTS.map((s) => ({ value: s, label: s }))]} />
-          </FilterRow>
-          <FilterRow label="Level">
-            <SelectField value={filters.level} onChange={(v) => set("level", v)} options={[{ value: "any", label: "Any level" }, ...LEVELS.map((s) => ({ value: s, label: s }))]} />
-          </FilterRow>
-          <FilterRow label="Board">
-            <SelectField value={filters.board} onChange={(v) => set("board", v)} options={[{ value: "any", label: "Any board" }, ...BOARDS.map((s) => ({ value: s, label: s }))]} />
-          </FilterRow>
-          <FilterRow label="Mode">
-            <SelectField value={filters.mode} onChange={(v) => set("mode", v)} options={MODES} />
-          </FilterRow>
-          <FilterRow label="Teacher gender">
-            <SelectField value={filters.gender} onChange={(v) => set("gender", v)} options={[
-              { value: "any", label: "Any" },
-              { value: "male", label: "Male" },
-              { value: "female", label: "Female" },
-              { value: "other", label: "Other" },
-            ]} />
-          </FilterRow>
-          <FilterRow label="Language">
-            <Input placeholder="e.g. English" value={filters.language} onChange={(e) => set("language", e.target.value)} />
-          </FilterRow>
-          <FilterRow label={`Max fee: ₹${filters.feeMax}${filters.feeMax >= 5000 ? "+" : ""}/hr`}>
-            <Slider value={[filters.feeMax]} min={100} max={5000} step={100} onValueChange={([v]) => set("feeMax", v)} />
-          </FilterRow>
-          <FilterRow label={`Min rating: ${filters.minRating || "Any"}`}>
-            <div className="flex gap-1">
-              {[0, 3, 4, 4.5].map((r) => (
-                <Button key={r} type="button" variant={filters.minRating === r ? "default" : "outline"} size="sm" className="flex-1" onClick={() => set("minRating", r)}>
-                  {r || "Any"}
-                </Button>
-              ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            <FilterRow label="Search">
+              <Input placeholder="Name or keyword" value={filters.q} onChange={(e) => set("q", e.target.value)} />
+            </FilterRow>
+            <FilterRow label="Location">
+              <Input placeholder="City or area" value={filters.city} onChange={(e) => set("city", e.target.value)} />
+            </FilterRow>
+            <FilterRow label="Subject">
+              <SelectField value={filters.subject} onChange={(v) => set("subject", v)} options={[{ value: "any", label: "Any subject" }, ...SUBJECTS.map((s) => ({ value: s, label: s }))]} />
+            </FilterRow>
+            <FilterRow label="Level">
+              <SelectField value={filters.level} onChange={(v) => set("level", v)} options={[{ value: "any", label: "Any level" }, ...LEVELS.map((s) => ({ value: s, label: s }))]} />
+            </FilterRow>
+            <FilterRow label="Board">
+              <SelectField value={filters.board} onChange={(v) => set("board", v)} options={[{ value: "any", label: "Any board" }, ...BOARDS.map((s) => ({ value: s, label: s }))]} />
+            </FilterRow>
+            <FilterRow label="Mode">
+              <SelectField value={filters.mode} onChange={(v) => set("mode", v)} options={MODES} />
+            </FilterRow>
+            <FilterRow label="Teacher gender">
+              <SelectField value={filters.gender} onChange={(v) => set("gender", v)} options={[
+                { value: "any", label: "Any gender" },
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+                { value: "other", label: "Other" },
+              ]} />
+            </FilterRow>
+            <FilterRow label="Language">
+              <Input placeholder="e.g. English" value={filters.language} onChange={(e) => set("language", e.target.value)} />
+            </FilterRow>
+            
+            {/* Max Hourly Fee */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Max Hourly Fee</span>
+                <span className="text-sm font-bold text-[#4665FF] font-display">₹{filters.feeMax}{filters.feeMax >= 5000 ? "+" : ""}/hr</span>
+              </div>
+              <Slider value={[filters.feeMax]} min={100} max={5000} step={100} onValueChange={([v]) => set("feeMax", v)} />
+              <div className="flex justify-between text-[10px] font-semibold text-muted-foreground">
+                <span>₹100</span>
+                <span>₹5,000+</span>
+              </div>
             </div>
-          </FilterRow>
-        </aside>
+
+            {/* Min Rating */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Min Rating</span>
+                <span className="text-sm font-bold text-[#4665FF] font-display">{filters.minRating === 0 ? "Any" : `${filters.minRating}★ & above`}</span>
+              </div>
+              <div className="flex w-full bg-[#F8F9FE] p-1 rounded-xl border border-border/50">
+                {[0, 3, 4, 4.5].map((r) => {
+                  const isActive = filters.minRating === r;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => set("minRating", r)}
+                      className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 text-center flex items-center justify-center gap-0.5 cursor-pointer ${
+                        isActive
+                          ? "bg-[#4665FF] text-white shadow-sm font-bold"
+                          : "text-muted-foreground hover:bg-[#E2E8F0]/40 hover:text-foreground"
+                      }`}
+                    >
+                      {r === 0 ? "Any" : (
+                        <>
+                          <span>{r}</span>
+                          <Star className={`h-3 w-3 ${isActive ? 'fill-white text-white' : 'fill-muted-foreground text-muted-foreground'}`} />
+                          <span className="text-[9px] font-normal">+</span>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Favourites only toggle */}
+            {currentUserId && (
+              <div className="flex items-center gap-2.5 pt-6 select-none">
+                <Checkbox
+                  id="favourites-only"
+                  checked={filters.favouritesOnly}
+                  onCheckedChange={(checked) => set("favouritesOnly", !!checked)}
+                />
+                <label htmlFor="favourites-only" className="text-sm font-semibold text-foreground cursor-pointer flex items-center gap-1.5">
+                  <Heart className={`h-3.5 w-3.5 ${filters.favouritesOnly ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+                  Favourites only
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Results */}
-        <section>
+        <section className="space-y-4">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Sort by</p>
             <div className="w-48">
@@ -358,7 +423,7 @@ function TutorsPage() {
           </ul>
         </section>
       </div>
-      <AppFooter />
+
     </div>
   );
 }
@@ -383,7 +448,5 @@ function SelectField({ value, onChange, options }: { value: string; onChange: (v
   );
 }
 
-// Keep checkbox import used to avoid unused warnings; placeholder for future multi-select.
-void Checkbox;
 void useEffect;
 

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrimaryRole, dashboardPathForRole, type AppRole } from "@/lib/auth-helpers";
@@ -41,6 +41,13 @@ import parentImg from "@/assets/parent-child.jpg";
 import logoUrl from "@/assets/tutorconnect-logo.svg";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) {
+      const role = await fetchPrimaryRole();
+      throw redirect({ to: dashboardPathForRole(role) });
+    }
+  },
   head: () => ({
     meta: [
       { title: "TutorConnect | Find Trusted Local Tutors by Subject & Location" },
