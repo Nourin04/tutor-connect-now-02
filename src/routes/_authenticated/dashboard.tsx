@@ -1,38 +1,148 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Brand } from "@/components/site/Brand";
+import { AppHeader } from "@/components/site/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Star, Eye, Pencil, Search, MessageCircle, GraduationCap, Home, User, LogOut, SlidersHorizontal, MapPin, LayoutDashboard, Plus, X, Heart } from "lucide-react";
-import { fetchPrimaryRole, type AppRole, dashboardPathForRole } from "@/lib/auth-helpers";
-import { Textarea } from "@/components/ui/textarea";
+import { Star, Search, MapPin, User, SlidersHorizontal, Home, Heart, LogOut, X, MessageSquare, ArrowLeft } from "lucide-react";
+import { fetchPrimaryRole, type AppRole } from "@/lib/auth-helpers";
+import { TeacherProfileTab, LearnerProfileTab } from "@/components/site/ProfileTabs";
 import { toast } from "sonner";
 import { capitalize } from "@/lib/string-helpers";
 
+type SearchParams = {
+  tab?: string;
+};
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
+  validateSearch: (search: Record<string, unknown>): SearchParams => {
+    return {
+      tab: (search.tab as string) || "home",
+    };
+  },
   component: DashboardPage,
 });
 
+/* ---------- Constants for Filters ---------- */
+const SUBJECTS = [
+  "Mathematics", "Physics", "Chemistry", "Biology", "English",
+  "Hindi", "Computer Science", "Economics", "Accountancy", "Music",
+  "Art", "Other",
+];
+const LEVELS = [
+  "Class 1-5", "Class 6-8", "Class 9-10", "Class 11-12",
+  "Undergraduate", "Postgraduate", "Adult learner",
+];
+const BOARDS = ["CBSE", "ICSE", "State", "IB", "IGCSE", "Other"];
+const MODES = [
+  { value: "any", label: "Any mode" },
+  { value: "online", label: "Online" },
+  { value: "offline", label: "In-person" },
+  { value: "both", label: "Both" },
+];
+const SORTS = [
+  { value: "rating", label: "Top rated" },
+  { value: "experience", label: "Most experienced" },
+  { value: "fee_low", label: "Lowest fee" },
+];
+
+type FilterState = {
+  q: string;
+  city: string;
+  subject: string;
+  level: string;
+  board: string;
+  mode: string;
+  gender: string;
+  language: string;
+  feeMax: number;
+  minRating: number;
+  sort: string;
+  favouritesOnly: boolean;
+};
+
+const DEFAULT_FILTERS: FilterState = {
+  q: "",
+  city: "",
+  subject: "any",
+  level: "any",
+  board: "any",
+  mode: "any",
+  gender: "any",
+  language: "",
+  feeMax: 5000,
+  minRating: 0,
+  sort: "rating",
+  favouritesOnly: false,
+};
+
 function DashboardPage() {
   const navigate = useNavigate();
+  const { tab = "home" } = Route.useSearch();
   const [role, setRole] = useState<AppRole | null>(null);
   const [me, setMe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"home" | "requests" | "saved" | "profile">("home");
-  const [email, setEmail] = useState<string | null>(null);
+  const [savedTutors, setSavedTutors] = useState<string[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+
+  const activeTab = tab;
+
+  function setActiveTab(t: string) {
+    setSelectedStudent(null); // Reset selected student when changing tabs
+    navigate({ to: "/dashboard", search: { tab: t } });
+  }
+
+  async function loadSavedTutors(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from("saved_tutors" as any)
+        .select("teacher_id")
+        .eq("user_id", userId);
+      if (error) throw error;
+      setSavedTutors((data ?? []).map((d: any) => d.teacher_id));
+    } catch (e) {
+      console.warn("Error loading saved list:", e);
+    }
+  }
+
+  async function toggleSave(teacherId: string, isSaved: boolean) {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u?.user) return;
+    if (isSaved) {
+      const { error } = await supabase
+        .from("saved_tutors" as any)
+        .delete()
+        .eq("user_id", u.user.id)
+        .eq("teacher_id", teacherId);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setSavedTutors(prev => prev.filter(id => id !== teacherId));
+      toast.success("Tutor removed from saved list.");
+    } else {
+      const { error } = await supabase
+        .from("saved_tutors" as any)
+        .insert({ user_id: u.user.id, teacher_id: teacherId } as any);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setSavedTutors(prev => [...prev, teacherId]);
+      toast.success("Tutor saved!");
+    }
+  }
 
   useEffect(() => {
     (async () => {
       try {
         const { data: u } = await supabase.auth.getUser();
         if (!u.user) return;
-        setEmail(u.user.email ?? null);
         const r = await fetchPrimaryRole();
         setRole(r);
         if (r === "admin") {
@@ -49,6 +159,7 @@ function DashboardPage() {
           profileData.phone = phoneRes.data?.phone ?? "";
         }
         setMe(profileData);
+        await loadSavedTutors(u.user.id);
       } catch (err) {
         console.error("Error loading dashboard data:", err);
       } finally {
@@ -75,67 +186,17 @@ function DashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F9FA] transition-colors duration-300">
-      {/* Top Header */}
-      <header className="h-16 w-full border-b border-border bg-white flex items-center justify-between px-6 z-40 shrink-0">
-        <div className="flex items-center">
-          <Brand className="h-8" />
-        </div>
-        <div className="flex items-center gap-4">
-          <Badge className="bg-primary/10 text-primary border-0 capitalize">{role}</Badge>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full border border-border hover:bg-muted relative overflow-hidden shrink-0">
-                {me?.avatar_url ? (
-                  <img src={me.avatar_url} alt={me.full_name ?? "Profile"} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-xs font-bold text-[#4665FF]">
-                    {me?.full_name ? capitalize(me.full_name).slice(0, 1) : <User className="h-4 w-4" />}
-                  </div>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60 p-2">
-              <div className="px-2 py-1.5 flex flex-col">
-                <span className="text-sm font-bold text-[#1A1A1A]">
-                  {me?.full_name ? capitalize(me.full_name) : "User Profile"}
-                </span>
-                <span className="text-xs text-muted-foreground truncate">{email}</span>
-                {role === "admin" && (
-                  <span className="text-[10px] text-primary/80 font-semibold uppercase tracking-wider mt-1">
-                    Role: {role}
-                  </span>
-                )}
-              </div>
-              {role === "admin" && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to={dashboardPathForRole(role)}>
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/tutors">
-                      <Search className="mr-2 h-4 w-4" />
-                      Find tutors
-                    </Link>
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
+      {/* Shared Header */}
+      <AppHeader />
 
       {/* Main Layout Container */}
       <div className="flex-1 flex flex-col md:flex-row animate-in fade-in duration-300">
-        {/* Sidebar Nav */}
-        <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-border bg-white flex flex-col justify-between p-5 shrink-0">
+        {/* Sidebar Navigation */}
+        <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-border bg-white flex flex-col justify-between p-5 shrink-0 md:sticky md:top-16 md:h-[calc(100vh-4rem)]">
           <div className="space-y-1.5">
             <button
               onClick={() => setActiveTab("home")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                 activeTab === "home"
                   ? "bg-[#4665FF]/10 text-[#4665FF]"
                   : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
@@ -144,33 +205,33 @@ function DashboardPage() {
               <Home className="h-4 w-4" />
               Home
             </button>
+            {role !== "teacher" && (
+              <button
+                onClick={() => setActiveTab("favourites")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                  activeTab === "favourites"
+                    ? "bg-[#4665FF]/10 text-[#4665FF]"
+                    : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
+                }`}
+              >
+                <Star className={`h-4 w-4 ${activeTab === "favourites" ? "fill-current" : ""}`} />
+                Favourite Tutors
+              </button>
+            )}
             <button
               onClick={() => setActiveTab("requests")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                 activeTab === "requests"
                   ? "bg-[#4665FF]/10 text-[#4665FF]"
                   : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
               }`}
             >
-              <MessageCircle className="h-4 w-4" />
-              Requests Inbox
+              <MessageSquare className="h-4 w-4" />
+              Requests
             </button>
-            {role !== "teacher" && (
-              <button
-                onClick={() => setActiveTab("saved")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                  activeTab === "saved"
-                    ? "bg-[#4665FF]/10 text-[#4665FF]"
-                    : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
-                }`}
-              >
-                <Star className="h-4 w-4" />
-                Saved Tutors
-              </button>
-            )}
             <button
               onClick={() => setActiveTab("profile")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                 activeTab === "profile"
                   ? "bg-[#4665FF]/10 text-[#4665FF]"
                   : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
@@ -183,7 +244,7 @@ function DashboardPage() {
 
           <button
             onClick={signOut}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-red-50 transition-all mt-6 md:mt-auto"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-red-50 transition-all mt-6 md:mt-auto cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
             Logout
@@ -192,123 +253,103 @@ function DashboardPage() {
 
         {/* Content View Area */}
         <main className="flex-1 p-4 sm:p-8 overflow-y-auto">
-          {role === "teacher" ? (
-            activeTab === "home" ? (
-              <TeacherDashboard me={me} setActiveTab={setActiveTab} />
+          <div className="max-w-7xl mx-auto">
+            {role === "teacher" ? (
+              selectedStudent ? (
+                <StudentProfileView student={selectedStudent} onBack={() => setSelectedStudent(null)} />
+              ) : activeTab === "home" ? (
+                <TeacherDashboard me={me} onViewStudentProfile={(s) => setSelectedStudent(s)} />
+              ) : activeTab === "requests" ? (
+                <TeacherRequestsView />
+              ) : activeTab === "profile" ? (
+                <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                  <TeacherProfileTab me={me} />
+                </div>
+              ) : null
+            ) : activeTab === "home" ? (
+              <LearnerDashboard me={me} savedTutors={savedTutors} onToggleSave={toggleSave} />
+            ) : activeTab === "favourites" ? (
+              <LearnerSavedTutorsView savedTutors={savedTutors} onToggleSave={toggleSave} />
             ) : activeTab === "requests" ? (
-              <TeacherRequestsView />
-            ) : (
-              <TeacherProfileTab me={me} setActiveTab={setActiveTab} />
-            )
-          ) : activeTab === "home" ? (
-            <LearnerDashboard me={me} />
-          ) : activeTab === "requests" ? (
-            <LearnerRequestsView />
-          ) : activeTab === "saved" ? (
-            <LearnerSavedTutorsView />
-          ) : (
-            <div className="max-w-4xl mx-auto">
-              <LearnerProfileTab me={me} />
-            </div>
-          )}
+              <LearnerRequestsView />
+            ) : activeTab === "profile" ? (
+              <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+                <LearnerProfileTab me={me} />
+              </div>
+            ) : null}
+          </div>
         </main>
       </div>
     </div>
   );
 }
 
-/* ---------------- Teacher views ---------------- */
+/* ---------------- Teacher Home Tab view ---------------- */
 interface TeacherDashboardProps {
   me: any;
-  setActiveTab: (tab: "home" | "profile" | "requests" | "saved") => void;
+  onViewStudentProfile: (student: any) => void;
 }
 
-function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
+function TeacherDashboard({ me, onViewStudentProfile }: TeacherDashboardProps) {
   const [tp, setTp] = useState<any>(null);
   const [contactCount, setContactCount] = useState(0);
-  const [userId, setUserId] = useState("");
-  const [requests, setRequests] = useState<any[]>([]);
+  const [acceptedStudents, setAcceptedStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  async function loadRequests(tId: string) {
-    try {
-      const { data: reqData } = await supabase
-        .from("contact_events")
-        .select(
-          `
-          id, 
-          status, 
-          created_at, 
-          viewer_id, 
-          profiles:profiles!contact_events_viewer_id_fkey(
-            full_name, 
-            email, 
-            student_profiles:student_profiles(class_grade, subjects_of_interest)
-          )
-        `,
-        )
-        .eq("teacher_id", tId)
-        .order("created_at", { ascending: false });
-
-      const reqs = (reqData as any[]) ?? [];
-
-      const acceptedIds = reqs.filter((r) => r.status === "accepted").map((r) => r.viewer_id);
-
-      let phonesMap: Record<string, string> = {};
-      if (acceptedIds.length > 0) {
-        const { data: phones } = await supabase
-          .from("user_phones")
-          .select("user_id, phone")
-          .in("user_id", acceptedIds);
-        (phones ?? []).forEach((p) => {
-          phonesMap[p.user_id] = p.phone;
-        });
-      }
-
-      setRequests(
-        reqs.map((r) => ({
-          ...r,
-          phone: phonesMap[r.viewer_id] || null,
-        })),
-      );
-    } catch (err) {
-      console.error("Error loading requests:", err);
-    }
-  }
-
-  async function handleRequest(requestId: string, nextStatus: "accepted" | "declined") {
-    const { error } = await supabase
-      .from("contact_events")
-      .update({ status: nextStatus })
-      .eq("id", requestId);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    toast.success(`Request ${nextStatus}.`);
-    if (userId) {
-      loadRequests(userId);
-    }
-  }
 
   useEffect(() => {
     (async () => {
       try {
         const { data: u } = await supabase.auth.getUser();
         if (!u.user) return;
-        setUserId(u.user.id);
-        const [tpRes, cRes] = await Promise.all([
+        
+        const [tpRes, cRes, reqData] = await Promise.all([
           supabase.from("teacher_profiles").select("*").eq("user_id", u.user.id).maybeSingle(),
           supabase
             .from("contact_events")
             .select("id", { count: "exact", head: true })
             .eq("teacher_id", u.user.id),
+          supabase
+            .from("contact_events")
+            .select(`
+              id, 
+              status, 
+              created_at, 
+              viewer_id, 
+              profiles:profiles!contact_events_viewer_id_fkey(
+                full_name, 
+                email, 
+                avatar_url,
+                student_profiles:student_profiles(class_grade, subjects_of_interest)
+              )
+            `)
+            .eq("teacher_id", u.user.id)
+            .eq("status", "accepted")
+            .order("created_at", { ascending: false }),
         ]);
+
         setTp(tpRes.data);
         setContactCount(cRes.count ?? 0);
-        await loadRequests(u.user.id);
+
+        const reqs = (reqData.data as any[]) ?? [];
+        const acceptedIds = reqs.map((r) => r.viewer_id);
+
+        let phonesMap: Record<string, string> = {};
+        if (acceptedIds.length > 0) {
+          const { data: phones } = await supabase
+            .from("user_phones")
+            .select("user_id, phone")
+            .in("user_id", acceptedIds);
+          (phones ?? []).forEach((p) => {
+            phonesMap[p.user_id] = p.phone;
+          });
+        }
+
+        setAcceptedStudents(
+          reqs.map((r) => ({
+            ...r,
+            phone: phonesMap[r.viewer_id] || null,
+          })),
+        );
       } catch (err) {
         console.error("Error fetching teacher dashboard:", err);
       } finally {
@@ -316,6 +357,8 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
       }
     })();
   }, []);
+
+  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading dashboard stats…</div>;
 
   const ratingAvg = tp?.rating_avg ? Number(tp.rating_avg).toFixed(1) : "0.0";
   const feeLabel = tp
@@ -325,17 +368,22 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
     : "-";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A] font-display">Welcome Back, {capitalize(me?.full_name)}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Here is a quick overview of your teaching metrics.</p>
+      </div>
+
       {/* Metrics Row (3 Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Profile Views / Contact Reveals Card */}
-        <div className="bg-white rounded-2xl border-2 border-border/80 p-6 flex flex-col justify-between shadow-sm">
+        <div className="bg-white rounded-2xl border border-border p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
           <p className="text-sm font-semibold text-[#1A1A1A]">Your Profile Views</p>
           <p className="text-4xl font-bold text-[#1A1A1A] mt-4 font-display">{contactCount}</p>
         </div>
 
         {/* Ratings Card */}
-        <div className="bg-white rounded-2xl border-2 border-border/80 p-6 flex flex-col justify-between shadow-sm">
+        <div className="bg-white rounded-2xl border border-border p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
           <p className="text-sm font-semibold text-[#1A1A1A]">Your ratings</p>
           <div className="flex items-baseline gap-1 mt-4">
             <p className="text-4xl font-bold text-[#1A1A1A] font-display">{ratingAvg}</p>
@@ -343,1351 +391,189 @@ function TeacherDashboard({ me, setActiveTab }: TeacherDashboardProps) {
           </div>
         </div>
 
-        {/* Other Metric / Hourly Rate Card */}
-        <div className="bg-white rounded-2xl border-2 border-border/80 p-6 flex flex-col justify-between shadow-sm">
+        {/* Hourly Rate Card */}
+        <div className="bg-white rounded-2xl border border-border p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
           <p className="text-sm font-semibold text-[#1A1A1A]">Hourly rate</p>
           <p className="text-3xl font-bold text-[#1A1A1A] mt-4 font-display truncate">{feeLabel}</p>
         </div>
       </div>
 
-      {/* Requests Section */}
-      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-[#1A1A1A] pb-4 border-b border-border/80">
-          Requests
-        </h2>
+      {/* My Students Section */}
+      <div className="space-y-4 pt-4 border-t border-border/40">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-[#1A1A1A] font-display">My Students</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Students who requested your contact details and were accepted.</p>
+        </div>
 
-        <div className="mt-4 divide-y divide-border/50">
-          {requests.map((r, index) => {
-            const studentName = r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A Student";
-            const grade = r.profiles?.student_profiles?.class_grade || "Any Grade";
-            const subjects = (r.profiles?.student_profiles?.subjects_of_interest ?? []).map(capitalize).join(", ") || "Any Subject";
+        {acceptedStudents.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-12 text-center shadow-sm">
+            <User className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="font-semibold text-[#1A1A1A]">No accepted students yet</p>
+            <p className="text-xs text-muted-foreground mt-1">Accept student connection requests to see them here.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {acceptedStudents.map((r) => {
+              const studentName = r.profiles?.full_name ? capitalize(r.profiles.full_name) : "Student";
+              const grade = r.profiles?.student_profiles?.class_grade || "Any Grade";
+              const subjects = (r.profiles?.student_profiles?.subjects_of_interest ?? []).map(capitalize).join(", ") || "Any Subject";
 
-            return (
-              <div
-                key={r.id}
-                className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 first:pt-0 last:pb-0"
-              >
-                <div className="flex items-start gap-2.5">
-                  <span className="text-[#1A1A1A] font-semibold text-sm mt-0.5">{index + 1}.</span>
+              return (
+                <div key={r.id} className="bg-white rounded-2xl border border-border p-5 text-center flex flex-col justify-between hover:shadow-md hover:border-[#4665FF]/20 transition-all shadow-sm relative group">
                   <div>
-                    <h3 className="font-bold text-sm text-[#1A1A1A]">{studentName}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {grade} | {subjects}
-                    </p>
-                    {r.phone && r.status === "accepted" && (
-                      <p className="text-xs font-semibold text-[#4665FF] mt-1">Phone: {r.phone}</p>
-                    )}
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Requested on {new Date(r.created_at).toLocaleDateString()}
+                    {/* Student Avatar */}
+                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 border border-border overflow-hidden shrink-0">
+                      {r.profiles?.avatar_url ? (
+                        <img
+                          src={r.profiles.avatar_url}
+                          alt={studentName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-lg font-bold text-[#4665FF]">
+                          {studentName.slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-base font-bold text-[#1A1A1A] line-clamp-1">{studentName}</h3>
+                    <p className="text-xs text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
+                      <MapPin className="h-3 w-3 shrink-0 text-[#4665FF]" />
+                      <span>Grade: {grade}</span>
                     </p>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  {r.status === "pending" ? (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleRequest(r.id, "accepted")}
-                        className="bg-[#E2E8F0] text-[#1A1A1A] hover:bg-[#CBD5E1] rounded-full px-5 font-semibold"
-                      >
-                        Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleRequest(r.id, "declined")}
-                        className="bg-[#E2E8F0] text-[#1A1A1A] hover:bg-[#CBD5E1] rounded-full px-5 font-semibold"
-                      >
-                        Decline
-                      </Button>
-                    </>
-                  ) : (
-                    <Badge
-                      variant={r.status === "accepted" ? "secondary" : "outline"}
-                      className={`capitalize rounded-full font-semibold px-3 py-1 ${
-                        r.status === "accepted"
-                          ? "bg-green-500/10 text-green-600 border-0"
-                          : "text-muted-foreground bg-slate-100/50 border-0"
-                      }`}
-                    >
-                      {r.status}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                  <div className="mt-4 pt-4 border-t border-border/50 text-left space-y-2.5">
+                    {subjects && (
+                      <div>
+                        <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+                          Subjects
+                        </p>
+                        <p className="text-xs text-foreground/80 font-medium line-clamp-1 mt-0.5">{subjects}</p>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+                        Contact Details
+                      </p>
+                      <p className="text-xs text-foreground/80 font-medium truncate mt-0.5">{r.profiles?.email}</p>
+                      {r.phone && <p className="text-xs font-semibold text-[#4665FF] mt-0.5">Phone: {r.phone}</p>}
+                    </div>
+                  </div>
 
-          {requests.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              No requests received yet.
-            </p>
-          )}
-        </div>
+                  <Button
+                    size="sm"
+                    onClick={() => onViewStudentProfile(r)}
+                    className="w-full mt-5 rounded-full bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm cursor-pointer text-xs"
+                  >
+                    View Profile
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-interface TeacherProfileTabProps {
-  me: any;
-  setActiveTab: (tab: "home" | "profile") => void;
+/* ---------------- Student Profile detail view screen ---------------- */
+interface StudentProfileViewProps {
+  student: any;
+  onBack: () => void;
 }
 
-const SUBJECTS = [
-  "Mathematics", "Physics", "Chemistry", "Biology", "English",
-  "Hindi", "Computer Science", "Economics", "Accountancy", "Music",
-  "Art", "Other",
-];
-const LEVELS = [
-  "Class 1-5", "Class 6-8", "Class 9-10", "Class 11-12",
-  "Undergraduate", "Postgraduate", "Adult learner",
-];
-const BOARDS = ["CBSE", "ICSE", "State", "IB", "IGCSE", "Other"];
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const SLOTS = [
-  "Morning (6–10am)",
-  "Late morning (10am–1pm)",
-  "Afternoon (1–5pm)",
-  "Evening (5–9pm)",
-  "Night (9–11pm)",
-];
-
-function TeacherProfileTab({ me, setActiveTab }: TeacherProfileTabProps) {
-  const navigate = useNavigate();
-  const [tp, setTp] = useState<any>(null);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [profileSubTab, setProfileSubTab] = useState<
-    "personal" | "qualifications" | "availability"
-  >("personal");
-  const [email, setEmail] = useState<string | null>(null);
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // Draft States
-  const [personalDraft, setPersonalDraft] = useState({
-    full_name: "",
-    phone: "",
-    city: "",
-    area: "",
-    gender: "" as "" | "male" | "female" | "other" | "prefer_not_to_say",
-    bio: "",
-  });
-
-  const [qualificationsDraft, setQualificationsDraft] = useState({
-    highest_degree: "",
-    university: "",
-    years_experience: 0,
-    fee_min: 500,
-    fee_max: 1000,
-    certifications: [] as string[],
-    other_experience: [] as string[],
-  });
-
-  const [subjectsDraft, setSubjectsDraft] = useState<{ subject: string; level: string; board: string }[]>([]);
-
-  const [availabilityDraft, setAvailabilityDraft] = useState({
-    mode: "both" as "online" | "offline" | "both",
-    languages: [] as string[],
-    available_days: [] as string[],
-    time_slots: [] as string[],
-  });
-
-  useEffect(() => {
-    (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      setEmail(u.user.email ?? null);
-      const [tpRes, sRes] = await Promise.all([
-        supabase.from("teacher_profiles").select("*").eq("user_id", u.user.id).maybeSingle(),
-        supabase
-          .from("teacher_subjects")
-          .select("subject, level, board")
-          .eq("teacher_id", u.user.id),
-      ]);
-      setTp(tpRes.data);
-      setSubjects((sRes.data as any[]) ?? []);
-    })();
-  }, []);
-
-  async function toggleActive(v: boolean) {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
-    const { error } = await supabase
-      .from("teacher_profiles")
-      .update({ is_active: v })
-      .eq("user_id", u.user.id);
-    if (error) return toast.error(error.message);
-    setTp((p: any) => ({ ...p, is_active: v }));
-    toast.success(v ? "Listing reactivated." : "Listing deactivated.");
-  }
-
-  function enterEdit() {
-    setPersonalDraft({
-      full_name: me?.full_name ?? "",
-      phone: me?.phone ?? "",
-      city: me?.city ?? "",
-      area: me?.area ?? "",
-      gender: tp?.gender ?? "",
-      bio: tp?.bio ?? "",
-    });
-    setQualificationsDraft({
-      highest_degree: tp?.highest_degree ?? "",
-      university: tp?.university ?? "",
-      years_experience: tp?.years_experience ?? 0,
-      fee_min: tp?.fee_min ?? 500,
-      fee_max: tp?.fee_max ?? 1000,
-      certifications: tp?.certifications ?? [],
-      other_experience: tp?.other_experience ?? [],
-    });
-    setSubjectsDraft(subjects.map(s => ({ subject: s.subject, level: s.level, board: s.board })));
-    setAvailabilityDraft({
-      mode: tp?.mode ?? "both",
-      languages: tp?.languages ?? [],
-      available_days: tp?.available_days ?? [],
-      time_slots: tp?.time_slots ?? [],
-    });
-    setIsEditing(true);
-  }
-
-  function cancelEdit() {
-    setIsEditing(false);
-  }
-
-  async function handleSave() {
-    // Validations
-    if (!personalDraft.full_name.trim()) return toast.error("Full name is required.");
-    if (!/^[a-zA-Z\s'-]+$/.test(personalDraft.full_name.trim())) {
-      return toast.error("Name can only contain letters, hyphens, apostrophes, and spaces.");
-    }
-    if (personalDraft.full_name.length > 80) return toast.error("Name must be 80 characters or less.");
-
-    if (!personalDraft.phone.trim()) return toast.error("Mobile number is required.");
-    if (!/^\+?[0-9\s-()]{7,20}$/.test(personalDraft.phone.trim())) {
-      return toast.error("Enter a valid phone number (7 to 20 digits).");
-    }
-
-    if (!personalDraft.city.trim()) return toast.error("City is required.");
-    if (personalDraft.city.length > 50) return toast.error("City must be 50 characters or less.");
-
-    if (!personalDraft.area.trim()) return toast.error("Area / locality is required.");
-    if (personalDraft.area.length > 80) return toast.error("Area must be 80 characters or less.");
-
-    if (personalDraft.bio.trim() && personalDraft.bio.trim().length < 10) {
-      return toast.error("About you (bio) must be at least 10 characters.");
-    }
-    if (personalDraft.bio.length > 1000) return toast.error("Bio must be under 1000 characters.");
-
-    if (!qualificationsDraft.highest_degree.trim()) return toast.error("Highest degree is required.");
-    if (qualificationsDraft.highest_degree.length > 100) return toast.error("Highest degree must be 100 characters or less.");
-    if (!qualificationsDraft.university.trim()) return toast.error("University / Institution is required.");
-    if (qualificationsDraft.university.length > 100) return toast.error("University must be 100 characters or less.");
-    if (qualificationsDraft.years_experience === undefined || qualificationsDraft.years_experience < 0 || qualificationsDraft.years_experience > 60) {
-      return toast.error("Please enter a valid number of years of experience (0 to 60).");
-    }
-
-    const cleanedSubs = subjectsDraft.filter((s) => s.subject.trim() && s.level && s.board);
-    if (cleanedSubs.length === 0) return toast.error("Please add at least one subject with level and board details.");
-
-    if (qualificationsDraft.fee_min === undefined || qualificationsDraft.fee_min < 0 || qualificationsDraft.fee_min > 100000) return toast.error("Please enter a valid minimum fee.");
-    if (qualificationsDraft.fee_max === undefined || qualificationsDraft.fee_max < 0 || qualificationsDraft.fee_max > 100000) return toast.error("Please enter a valid maximum fee.");
-    if (Number(qualificationsDraft.fee_min) > Number(qualificationsDraft.fee_max)) return toast.error("Minimum fee cannot exceed maximum fee.");
-    if (availabilityDraft.available_days.length === 0) return toast.error("Please select at least one available day.");
-    if (availabilityDraft.time_slots.length === 0) return toast.error("Please select at least one time slot.");
-    if (availabilityDraft.languages.length === 0) return toast.error("Please add at least one language of instruction.");
-
-    setSaving(true);
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) { setSaving(false); return; }
-
-    // Update profile
-    const { error: pErr } = await supabase.from("profiles").update({
-      full_name: personalDraft.full_name.trim(),
-      city: personalDraft.city.trim(),
-      area: personalDraft.area.trim(),
-    }).eq("id", u.user.id);
-    if (pErr) { setSaving(false); return toast.error(pErr.message); }
-
-    // Update phone number
-    const { error: phoneErr } = await supabase.from("user_phones").upsert({
-      user_id: u.user.id,
-      phone: personalDraft.phone.trim(),
-    }, { onConflict: "user_id" });
-    if (phoneErr) { setSaving(false); return toast.error(phoneErr.message); }
-
-    // Update teacher profile
-    const { error: tpErr } = await supabase.from("teacher_profiles").update({
-      highest_degree: qualificationsDraft.highest_degree.trim() || null,
-      university: qualificationsDraft.university.trim() || null,
-      years_experience: Number(qualificationsDraft.years_experience) || 0,
-      certifications: qualificationsDraft.certifications,
-      other_experience: qualificationsDraft.other_experience,
-      available_days: availabilityDraft.available_days,
-      time_slots: availabilityDraft.time_slots,
-      mode: availabilityDraft.mode,
-      fee_min: Number(qualificationsDraft.fee_min) || 0,
-      fee_max: Number(qualificationsDraft.fee_max) || 0,
-      gender: personalDraft.gender || null,
-      languages: availabilityDraft.languages,
-      bio: personalDraft.bio.trim(),
-    }).eq("user_id", u.user.id);
-    if (tpErr) { setSaving(false); return toast.error(tpErr.message); }
-
-    // Save subjects
-    await supabase.from("teacher_subjects").delete().eq("teacher_id", u.user.id);
-    const { error: sErr } = await supabase.from("teacher_subjects").insert(
-      cleanedSubs.map((s) => ({
-        teacher_id: u.user.id,
-        subject: s.subject.trim(),
-        level: s.level,
-        board: s.board,
-      }))
-    );
-    if (sErr) { setSaving(false); return toast.error(sErr.message); }
-
-    // Update local state
-    me.full_name = personalDraft.full_name.trim();
-    me.phone = personalDraft.phone.trim();
-    me.city = personalDraft.city.trim();
-    me.area = personalDraft.area.trim();
-
-    setTp((prev: any) => ({
-      ...prev,
-      gender: personalDraft.gender,
-      bio: personalDraft.bio.trim(),
-      highest_degree: qualificationsDraft.highest_degree.trim(),
-      university: qualificationsDraft.university.trim(),
-      years_experience: Number(qualificationsDraft.years_experience),
-      certifications: qualificationsDraft.certifications,
-      other_experience: qualificationsDraft.other_experience,
-      available_days: availabilityDraft.available_days,
-      time_slots: availabilityDraft.time_slots,
-      mode: availabilityDraft.mode,
-      fee_min: Number(qualificationsDraft.fee_min),
-      fee_max: Number(qualificationsDraft.fee_max),
-      languages: availabilityDraft.languages,
-    }));
-    setSubjects(cleanedSubs);
-
-    setSaving(false);
-    toast.success("Profile saved!");
-    setIsEditing(false);
-  }
-
-  const subjectNames = subjects.map((s) => `${capitalize(s.subject)} (${s.level})`).join(", ");
-
-  const inputCls = "w-full h-11 px-3 rounded-xl border border-[#E2E8F0] bg-[#F8F9FE] text-sm font-medium text-[#1A1A1A] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all";
-  const labelCls = "text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1 block";
-
-  // Inner components
-  function InnerTagInput({
-    label,
-    values,
-    onChange,
-    placeholder,
-  }: {
-    label: string;
-    values: string[];
-    onChange: (v: string[]) => void;
-    placeholder?: string;
-  }) {
-    const [draftVal, setDraftVal] = useState("");
-    return (
-      <div className="space-y-2 col-span-1 md:col-span-2 mt-2">
-        <label className={labelCls}>{label}</label>
-        <div className="flex flex-wrap gap-2">
-          {values.map((v, i) => (
-            <Badge
-              key={i}
-              variant="secondary"
-              className="bg-[#4665FF]/10 text-[#4665FF] border-0 gap-1 pr-1"
-            >
-              {capitalize(v)}
-              <button
-                type="button"
-                onClick={() => onChange(values.filter((_, j) => j !== i))}
-                className="ml-0.5 rounded-full hover:bg-[#4665FF]/20 p-0.5 transition-colors"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <Input
-            value={draftVal}
-            onChange={(e) => setDraftVal(e.target.value)}
-            placeholder={placeholder}
-            className="flex-1 h-11 px-3 rounded-xl border border-[#E2E8F0] bg-white text-sm"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && draftVal.trim()) {
-                e.preventDefault();
-                onChange([...values, draftVal.trim()]);
-                setDraftVal("");
-              }
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 rounded-xl"
-            onClick={() => {
-              if (draftVal.trim()) {
-                onChange([...values, draftVal.trim()]);
-                setDraftVal("");
-              }
-            }}
-          >
-            Add
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  function InnerChipPicker({
-    label,
-    options,
-    values,
-    onChange,
-  }: {
-    label: string;
-    options: string[];
-    values: string[];
-    onChange: (v: string[]) => void;
-  }) {
-    function toggle(o: string) {
-      onChange(values.includes(o) ? values.filter((v) => v !== o) : [...values, o]);
-    }
-    return (
-      <div className="space-y-2 col-span-1 md:col-span-2 mt-2">
-        <label className={labelCls}>{label}</label>
-        <div className="flex flex-wrap gap-2">
-          {options.map((o) => {
-            const on = values.includes(o);
-            return (
-              <button
-                key={o}
-                type="button"
-                onClick={() => toggle(o)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-                  on
-                    ? "border-[#4665FF] bg-[#4665FF] text-white"
-                    : "border-border bg-white hover:border-[#4665FF]/40 text-muted-foreground"
-                }`}
-              >
-                {o}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+function StudentProfileView({ student, onBack }: StudentProfileViewProps) {
+  const studentName = student.profiles?.full_name ? capitalize(student.profiles.full_name) : "Student";
+  const grade = student.profiles?.student_profiles?.class_grade || "Any Grade";
+  const subjects = (student.profiles?.student_profiles?.subjects_of_interest ?? []).map(capitalize).join(", ") || "Any Subject";
 
   return (
     <div className="space-y-6">
-      {/* Profile Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A] font-display">
-            {isEditing ? "Edit Your Profile" : "Profile Details"}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {isEditing
-              ? "Update your qualifications, subjects, and availability."
-              : "Manage your teaching preferences and qualifications."}
-          </p>
+      {/* Back to Home Button */}
+      <div className="flex justify-start">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors duration-200 cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </button>
+      </div>
+
+      {/* Main Student Profile details layout */}
+      <div className="bg-white rounded-2xl border border-border p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 border-b border-border/50 pb-6">
+          {/* Avatar */}
+          <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border border-border overflow-hidden shrink-0">
+            {student.profiles?.avatar_url ? (
+              <img src={student.profiles.avatar_url} alt={studentName} className="w-full h-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-2xl font-bold text-[#4665FF]">
+                {studentName.slice(0, 1).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 text-center sm:text-left space-y-1">
+            <h1 className="text-2xl font-bold text-[#1A1A1A] font-display">{studentName}</h1>
+            <p className="text-sm font-semibold text-[#4665FF]">Grade Level: {grade}</p>
+            <p className="text-xs text-muted-foreground">Registered Student Member</p>
+          </div>
         </div>
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="rounded-full border-border text-[#1A1A1A] hover:bg-slate-100"
-              onClick={cancelEdit}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-[#4665FF] hover:bg-[#4665FF]/90 rounded-full"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? "Saving…" : "Save Profile"}
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setActiveTab("home")}
-              className="bg-[#E2E8F0] text-[#1A1A1A] hover:bg-[#CBD5E1] rounded-full px-5 font-semibold"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={enterEdit}
-              className="bg-[#4665FF] text-white hover:bg-[#4665FF]/90 rounded-full px-5 font-semibold"
-            >
-              Edit Profile
-            </Button>
-          </div>
-        )}
-      </div>
 
-      <hr className="border-border/80" />
-
-      {/* Tab Selectors */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-1">
-        <button
-          onClick={() => setProfileSubTab("personal")}
-          className={`px-4 py-2 text-sm font-semibold rounded-xl border shrink-0 transition-all ${
-            profileSubTab === "personal"
-              ? "bg-[#E2E8F0] text-[#1A1A1A] border-[#CBD5E1]"
-              : "bg-white text-muted-foreground border-border hover:bg-slate-50"
-          }`}
-        >
-          Personal Information
-        </button>
-        <button
-          onClick={() => setProfileSubTab("qualifications")}
-          className={`px-4 py-2 text-sm font-semibold rounded-xl border shrink-0 transition-all ${
-            profileSubTab === "qualifications"
-              ? "bg-[#E2E8F0] text-[#1A1A1A] border-[#CBD5E1]"
-              : "bg-white text-muted-foreground border-border hover:bg-slate-50"
-          }`}
-        >
-          Qualifications
-        </button>
-        <button
-          onClick={() => setProfileSubTab("availability")}
-          className={`px-4 py-2 text-sm font-semibold rounded-xl border shrink-0 transition-all ${
-            profileSubTab === "availability"
-              ? "bg-[#E2E8F0] text-[#1A1A1A] border-[#CBD5E1]"
-              : "bg-white text-muted-foreground border-border hover:bg-slate-50"
-          }`}
-        >
-          Availability
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
-        {profileSubTab === "personal" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left panel: Subjects of Interest */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Personal Details</h3>
-            {isEditing ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelCls}>Full Name</label>
-                  <Input className={inputCls} value={personalDraft.full_name} onChange={e => setPersonalDraft(p => ({ ...p, full_name: e.target.value }))} maxLength={80} />
-                </div>
-                <div>
-                  <label className={labelCls}>Email Address</label>
-                  <Input className={`${inputCls} opacity-60 cursor-not-allowed`} value={email ?? ""} disabled />
-                </div>
-                <div>
-                  <label className={labelCls}>Phone Number</label>
-                  <Input className={inputCls} value={personalDraft.phone} onChange={e => setPersonalDraft(p => ({ ...p, phone: e.target.value }))} maxLength={20} />
-                </div>
-                <div>
-                  <label className={labelCls}>Gender</label>
-                  <Select value={personalDraft.gender} onValueChange={v => setPersonalDraft(p => ({ ...p, gender: v as any }))}>
-                    <SelectTrigger className={inputCls}>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                      <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className={labelCls}>City</label>
-                  <Input className={inputCls} value={personalDraft.city} onChange={e => setPersonalDraft(p => ({ ...p, city: e.target.value }))} maxLength={50} />
-                </div>
-                <div>
-                  <label className={labelCls}>Area</label>
-                  <Input className={inputCls} value={personalDraft.area} onChange={e => setPersonalDraft(p => ({ ...p, area: e.target.value }))} maxLength={80} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={labelCls}>Biography</label>
-                  <Textarea className="w-full min-h-[120px] rounded-xl border border-[#E2E8F0] bg-[#F8F9FE] p-3 text-sm" value={personalDraft.bio} onChange={e => setPersonalDraft(p => ({ ...p, bio: e.target.value }))} maxLength={1000} placeholder="Describe your experience, teaching style, and qualifications..." />
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <ProfileItem label="Full Name" value={capitalize(me?.full_name)} />
-                <ProfileItem label="Email Address" value={email} />
-                <ProfileItem label="Phone Number" value={me?.phone} />
-                <ProfileItem label="Gender" value={tp?.gender ? capitalize(tp.gender) : "-"} className="capitalize" />
-                <ProfileItem label="City" value={capitalize(me?.city)} />
-                <ProfileItem label="Area" value={capitalize(me?.area)} />
-                <ProfileItem label="Biography" value={tp?.bio} className="md:col-span-2 leading-relaxed" />
-              </div>
-            )}
+            <h3 className="text-sm font-bold text-[#1A1A1A] uppercase tracking-wider text-muted-foreground">Subjects of Interest</h3>
+            <div className="flex flex-wrap gap-2">
+              {(student.profiles?.student_profiles?.subjects_of_interest ?? []).map((subj: string, idx: number) => (
+                <Badge key={idx} variant="secondary" className="bg-[#4665FF]/5 text-[#4665FF] border-0 rounded-full px-3 py-1 font-semibold text-xs">
+                  {capitalize(subj)}
+                </Badge>
+              ))}
+              {(student.profiles?.student_profiles?.subjects_of_interest ?? []).length === 0 && (
+                <p className="text-sm text-muted-foreground italic">No subjects specified.</p>
+              )}
+            </div>
           </div>
-        )}
 
-        {profileSubTab === "qualifications" && (
+          {/* Right panel: Contact & Connection Details */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Qualifications & Experience</h3>
-            {isEditing ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <label className={labelCls}>Years of Experience</label>
-                  <Input type="number" min={0} max={60} className={inputCls} value={qualificationsDraft.years_experience} onChange={e => setQualificationsDraft(p => ({ ...p, years_experience: Number(e.target.value) }))} />
-                </div>
-                <div>
-                  <label className={labelCls}>Highest Degree</label>
-                  <Input className={inputCls} value={qualificationsDraft.highest_degree} onChange={e => setQualificationsDraft(p => ({ ...p, highest_degree: e.target.value }))} maxLength={100} />
-                </div>
-                <div>
-                  <label className={labelCls}>University / Institution</label>
-                  <Input className={inputCls} value={qualificationsDraft.university} onChange={e => setQualificationsDraft(p => ({ ...p, university: e.target.value }))} maxLength={100} />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelCls}>Min Fee (₹/hr)</label>
-                    <Input type="number" min={0} className={inputCls} value={qualificationsDraft.fee_min} onChange={e => setQualificationsDraft(p => ({ ...p, fee_min: Number(e.target.value) }))} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Max Fee (₹/hr)</label>
-                    <Input type="number" min={0} className={inputCls} value={qualificationsDraft.fee_max} onChange={e => setQualificationsDraft(p => ({ ...p, fee_max: Number(e.target.value) }))} />
-                  </div>
-                </div>
-
-                <div className="space-y-3 col-span-1 md:col-span-2 mt-2">
-                  <label className={labelCls}>Subjects Taught</label>
-                  <div className="space-y-3">
-                    {subjectsDraft.map((s, i) => {
-                      const isOtherSelected = s.subject === "Other" || (!SUBJECTS.includes(s.subject) && s.subject !== "");
-                      return (
-                        <div key={i} className="grid items-end gap-3 rounded-xl border border-border bg-slate-50/30 p-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Subject</Label>
-                            <div className="space-y-2">
-                              <Select
-                                value={SUBJECTS.includes(s.subject) ? s.subject : s.subject === "" ? "" : "Other"}
-                                onValueChange={(v) => {
-                                  const copy = [...subjectsDraft];
-                                  copy[i] = { ...copy[i], subject: v === "Other" ? "" : v };
-                                  setSubjectsDraft(copy);
-                                }}
-                              >
-                                <SelectTrigger className="h-10 bg-white">
-                                  <SelectValue placeholder="Select..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {SUBJECTS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                              {isOtherSelected && (
-                                <Input
-                                  placeholder="Type custom subject name..."
-                                  value={s.subject}
-                                  onChange={(e) => {
-                                    const copy = [...subjectsDraft];
-                                    copy[i] = { ...copy[i], subject: e.target.value };
-                                    setSubjectsDraft(copy);
-                                  }}
-                                  maxLength={50}
-                                  className="h-10 text-sm bg-white"
-                                />
-                              )}
-                            </div>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Level</Label>
-                            <Select
-                              value={s.level}
-                              onValueChange={(v) => {
-                                const copy = [...subjectsDraft];
-                                copy[i] = { ...copy[i], level: v };
-                                setSubjectsDraft(copy);
-                              }}
-                            >
-                              <SelectTrigger className="h-10 bg-white">
-                                <SelectValue placeholder="Select..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {LEVELS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Board</Label>
-                            <Select
-                              value={s.board}
-                              onValueChange={(v) => {
-                                const copy = [...subjectsDraft];
-                                copy[i] = { ...copy[i], board: v };
-                                setSubjectsDraft(copy);
-                              }}
-                            >
-                              <SelectTrigger className="h-10 bg-white">
-                                <SelectValue placeholder="Select..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {BOARDS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSubjectsDraft(subjectsDraft.filter((_, j) => j !== i))}
-                            className="h-10 w-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setSubjectsDraft([...subjectsDraft, { subject: "", level: "", board: "" }])}
-                      className="w-full border-dashed border-2 hover:bg-slate-50"
-                    >
-                      <Plus className="mr-2 h-4 w-4" /> Add Subject Row
-                    </Button>
-                  </div>
-                </div>
-
-                <InnerTagInput label="Certifications" values={qualificationsDraft.certifications} onChange={v => setQualificationsDraft(p => ({ ...p, certifications: v }))} placeholder="Add a certification and press Enter" />
-                <InnerTagInput label="Other Related Experience" values={qualificationsDraft.other_experience} onChange={v => setQualificationsDraft(p => ({ ...p, other_experience: v }))} placeholder="Add an experience and press Enter" />
+            <h3 className="text-sm font-bold text-[#1A1A1A] uppercase tracking-wider text-muted-foreground">Contact & Connection Details</h3>
+            <div className="bg-[#F8F9FE] border border-border/50 rounded-2xl p-5 space-y-3.5 text-sm">
+              <div className="flex justify-between items-center border-b border-border/40 pb-2.5">
+                <span className="font-semibold text-muted-foreground text-xs uppercase">Email Address</span>
+                <span className="font-medium text-foreground">{student.profiles?.email}</span>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <ProfileItem
-                  label="Years of Experience"
-                  value={tp?.years_experience ? `${tp.years_experience} years` : "-"}
-                />
-                <ProfileItem
-                  label="Fee Range"
-                  value={
-                    tp
-                      ? tp.fee_min === tp.fee_max
-                        ? `₹${tp.fee_min}/hr`
-                        : `₹${tp.fee_min}–₹${tp.fee_max}/hr`
-                      : "-"
-                  }
-                />
-                <ProfileItem
-                  label="Subjects Taught"
-                  value={subjectNames || "-"}
-                  className="md:col-span-2"
-                />
-                {(tp?.certifications ?? []).length > 0 && (
-                  <ProfileItem label="Certifications" value={tp.certifications.map(capitalize).join(", ")} className="md:col-span-2" />
-                )}
-                {(tp?.other_experience ?? []).length > 0 && (
-                  <ProfileItem label="Other Related Experience" value={tp.other_experience.map(capitalize).join(", ")} className="md:col-span-2" />
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {profileSubTab === "availability" && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Availability Parameters</h3>
-              {isEditing ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <label className={labelCls}>Teaching Mode</label>
-                    <Select value={availabilityDraft.mode} onValueChange={v => setAvailabilityDraft(p => ({ ...p, mode: v as any }))}>
-                      <SelectTrigger className={inputCls}>
-                        <SelectValue placeholder="Select mode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="online">Online</SelectItem>
-                        <SelectItem value="offline">In-person</SelectItem>
-                        <SelectItem value="both">Online &amp; In-person</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <InnerTagInput label="Languages of Instruction" values={availabilityDraft.languages} onChange={v => setAvailabilityDraft(p => ({ ...p, languages: v }))} placeholder="e.g. English, Malayalam" />
-                  <InnerChipPicker label="Available Days" options={DAYS} values={availabilityDraft.available_days} onChange={v => setAvailabilityDraft(p => ({ ...p, available_days: v }))} />
-                  <InnerChipPicker label="Time Slots" options={SLOTS} values={availabilityDraft.time_slots} onChange={v => setAvailabilityDraft(p => ({ ...p, time_slots: v }))} />
+              {student.phone && (
+                <div className="flex justify-between items-center border-b border-border/40 pb-2.5">
+                  <span className="font-semibold text-muted-foreground text-xs uppercase">Phone Number</span>
+                  <span className="font-bold text-[#4665FF]">{student.phone}</span>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <ProfileItem label="Teaching Mode" value={tp?.mode === "both" ? "Online & In-Person" : capitalize(tp?.mode)} />
-                  <ProfileItem label="Languages of Instruction" value={(tp?.languages ?? []).map(capitalize).join(", ") || "-"} />
-                  <ProfileItem label="Available Days" value={(tp?.available_days ?? []).map(capitalize).join(", ") || "-"} />
-                  <ProfileItem label="Time Slots" value={(tp?.time_slots ?? []).join(", ") || "-"} />
-                  <div className="rounded-xl border border-border bg-slate-50/50 p-4 flex items-center justify-between md:col-span-2">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Listing Visibility
-                      </p>
-                      <p className="mt-1 text-sm font-bold text-[#1A1A1A]">
-                        {tp?.is_active ? "Visible in search results" : "Hidden from search"}
-                      </p>
-                    </div>
-                    {tp && <Switch checked={!!tp.is_active} onCheckedChange={toggleActive} />}
-                  </div>
+              )}
+              {student.phone && (
+                <div className="pt-1.5 flex justify-end">
+                  <Button
+                    asChild
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white font-medium rounded-full shadow-sm cursor-pointer px-5"
+                  >
+                    <a href={`https://wa.me/${student.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer">
+                      WhatsApp Student
+                    </a>
+                  </Button>
                 </div>
               )}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
 }
 
-function ProfileItem({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: string | null | undefined;
-  className?: string;
-}) {
-  return (
-    <div className={`rounded-xl border border-border bg-slate-50/50 p-4 ${className || ""}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1.5 text-sm font-bold text-[#1A1A1A]">{value || "-"}</p>
-    </div>
-  );
-}
-
-/* ---------------- Learner/Student/Parent views ---------------- */
-function LearnerDashboard({ me }: { me: any }) {
-  const [tutors, setTutors] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [locationQuery, setLocationQuery] = useState("");
-  const [sortFilter, setSortFilter] = useState("rating");
-  const [loadingTutors, setLoadingTutors] = useState(true);
-
-  // Load tutors on load
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("teacher_profiles")
-          .select(
-            "user_id, bio, years_experience, fee_min, fee_max, mode, rating_avg, rating_count, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject, level, board)",
-          )
-          .eq("is_active", true);
-        if (error) throw error;
-        setTutors(data ?? []);
-      } catch (err) {
-        console.error("Error loading tutors:", err);
-      } finally {
-        setLoadingTutors(false);
-      }
-    })();
-  }, []);
-
-  const filteredTutors = useMemo(() => {
-    let list = [...tutors];
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter((t) => {
-        const fullName = t.profiles?.full_name?.toLowerCase() ?? "";
-        const bio = t.bio?.toLowerCase() ?? "";
-        const subjects = (t.teacher_subjects ?? [])
-          .map((s: any) => s.subject?.toLowerCase())
-          .join(" ");
-        return fullName.includes(q) || bio.includes(q) || subjects.includes(q);
-      });
-    }
-
-    if (locationQuery) {
-      const loc = locationQuery.toLowerCase();
-      list = list.filter((t) => {
-        const city = t.profiles?.city?.toLowerCase() ?? "";
-        const area = t.profiles?.area?.toLowerCase() ?? "";
-        return city.includes(loc) || area.includes(loc);
-      });
-    }
-
-    if (sortFilter === "rating") {
-      list.sort((a, b) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0));
-    } else if (sortFilter === "experience") {
-      list.sort((a, b) => (b.years_experience ?? 0) - (a.years_experience ?? 0));
-    } else if (sortFilter === "fee_low") {
-      list.sort((a, b) => (a.fee_min ?? 0) - (b.fee_min ?? 0));
-    }
-
-    return list;
-  }, [tutors, searchQuery, locationQuery, sortFilter]);
-
-  return (
-    <div className="space-y-6">
-      {/* Search & Sort Panel */}
-      <div className="bg-white rounded-2xl border border-border p-5 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
-          {/* Search Inputs */}
-          <div className="flex-1 flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tutors by name, keywords, subjects..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 pl-11 pr-4 rounded-full border border-border bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
-              />
-            </div>
-            <div className="relative w-44 sm:w-60">
-              <MapPin className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="City or Locality"
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                className="w-full h-11 pl-11 pr-4 rounded-full border border-border bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Sort Selection */}
-          <div className="w-full md:w-56">
-            <Select value={sortFilter} onValueChange={setSortFilter}>
-              <SelectTrigger className="w-full h-11 rounded-full border border-border bg-[#F8F9FE] focus:ring-[#4665FF]/10 focus:border-[#4665FF]">
-                <SelectValue placeholder="Sort order" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rating">Top rated</SelectItem>
-                <SelectItem value="experience">Most experienced</SelectItem>
-                <SelectItem value="fee_low">Lowest fee</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Applied Filters bar */}
-        {(locationQuery || searchQuery) && (
-          <div className="flex items-center gap-2 pt-2 text-xs text-muted-foreground border-t border-slate-100">
-            <span className="font-semibold">Applied Filters :</span>
-            {searchQuery && (
-              <Badge
-                variant="secondary"
-                className="bg-[#4665FF]/5 text-[#4665FF] border-0 rounded-full px-2.5 py-0.5 flex items-center gap-1"
-              >
-                Keyword: "{searchQuery}"
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="hover:text-red-500 font-bold ml-1"
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
-            {locationQuery && (
-              <Badge
-                variant="secondary"
-                className="bg-[#4665FF]/5 text-[#4665FF] border-0 rounded-full px-2.5 py-0.5 flex items-center gap-1"
-              >
-                Location: {locationQuery}
-                <button
-                  onClick={() => setLocationQuery("")}
-                  className="hover:text-red-500 font-bold ml-1"
-                >
-                  ×
-                </button>
-              </Badge>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Tutor Listings Grid */}
-      {loadingTutors ? (
-        <div className="py-20 text-center text-muted-foreground flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4665FF]"></div>
-          <span>Finding tutors...</span>
-        </div>
-      ) : filteredTutors.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-border p-16 text-center shadow-sm">
-          <SlidersHorizontal className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-[#1A1A1A]">No tutors found</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Try relaxing your search terms or changing the locality filter.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredTutors.map((tutor) => (
-            <TutorGridCard key={tutor.user_id} tutor={tutor} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TutorGridCard({ tutor }: { tutor: any }) {
-  const rating = Number(tutor.rating_avg || 0).toFixed(1);
-  const subjects = (tutor.teacher_subjects ?? []).map((s: any) => capitalize(s.subject)).join(", ");
-  const feeLabel = tutor.fee_min === tutor.fee_max ? `₹${tutor.fee_min}/hr` : `₹${tutor.fee_min}–${tutor.fee_max}/hr`;
-
-  return (
-    <div className="bg-white rounded-2xl border border-border p-5 text-center flex flex-col justify-between hover:shadow-md hover:border-[#4665FF]/20 transition-all shadow-sm">
-      <div>
-        <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center mx-auto mb-4 border border-border overflow-hidden shrink-0">
-          {tutor.profiles?.avatar_url ? (
-            <img
-              src={tutor.profiles.avatar_url}
-              alt={tutor.profiles.full_name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <User className="h-10 w-10 text-slate-400" />
-          )}
-        </div>
-        <h3 className="text-base font-bold text-[#1A1A1A] line-clamp-1">{tutor.profiles?.full_name ? capitalize(tutor.profiles.full_name) : "Tutor Profile"}</h3>
-        <p className="text-xs text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
-          <MapPin className="h-3 w-3 shrink-0 text-[#4665FF]" />
-          <span className="truncate">
-            {tutor.profiles?.area ? `${capitalize(tutor.profiles.area)}, ${capitalize(tutor.profiles.city)}` : tutor.profiles?.city ? capitalize(tutor.profiles.city) : "Local"}
-          </span>
-        </p>
-      </div>
-
-      <div className="mt-4 pt-4 border-t border-border/50 text-left space-y-2.5">
-        {subjects && (
-          <div>
-            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
-              Subjects
-            </p>
-            <p className="text-xs text-foreground/80 font-medium line-clamp-1 mt-0.5">{subjects}</p>
-          </div>
-        )}
-        <div className="flex justify-between items-center text-xs">
-          <div>
-            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
-              Hourly Fee
-            </p>
-            <p className="font-semibold text-foreground/90 mt-0.5">{feeLabel}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
-              Rating
-            </p>
-            <p className="font-bold text-[#4665FF] flex items-center justify-end gap-0.5 mt-0.5">
-              <Star className="h-3.5 w-3.5 fill-current text-[#4665FF]" />
-              {rating}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <Button
-        asChild
-        size="sm"
-        className="w-full mt-5 rounded-full bg-[#4665FF] text-white hover:bg-[#4665FF]/95 font-medium transition-all shadow-sm"
-      >
-        <Link to="/tutors/$id" params={{ id: tutor.user_id }}>
-          View Profile
-        </Link>
-      </Button>
-    </div>
-  );
-}
-
-function LearnerProfileTab({ me }: { me: any }) {
-  const [sp, setSp] = useState<any>(null);
-  const [email, setEmail] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string>("");
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  // Editable field state
-  const [draft, setDraft] = useState({
-    full_name: "",
-    phone: "",
-    city: "",
-    area: "",
-  });
-  const [spDraft, setSpDraft] = useState({
-    class_grade: "",
-    mode_preference: "both" as "online" | "offline" | "both",
-    subjects_of_interest: [] as string[],
-  });
-  const [subjectInput, setSubjectInput] = useState("");
-
-  const GRADES = [
-    "Class 1-5", "Class 6-8", "Class 9-10", "Class 11-12",
-    "Undergraduate", "Postgraduate", "Adult learner",
-  ];
-  const SUBJECTS = [
-    "Mathematics", "Physics", "Chemistry", "Biology", "English",
-    "Hindi", "Computer Science", "Economics", "Music", "Art",
-  ];
-
-  useEffect(() => {
-    (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      setEmail(u.user.email ?? null);
-      setUserId(u.user.id);
-      const { data: spRes } = await supabase.from("student_profiles").select("*").eq("user_id", u.user.id).maybeSingle();
-      setSp(spRes);
-      if (spRes) {
-        setSpDraft({
-          class_grade: spRes.class_grade ?? "",
-          mode_preference: spRes.mode_preference ?? "both",
-          subjects_of_interest: spRes.subjects_of_interest ?? [],
-        });
-      }
-    })();
-  }, []);
-
-  // Sync draft from me prop when entering edit mode
-  function enterEdit() {
-    setDraft({
-      full_name: me?.full_name ?? "",
-      phone: me?.phone ?? "",
-      city: me?.city ?? "",
-      area: me?.area ?? "",
-    });
-    if (sp) {
-      setSpDraft({
-        class_grade: sp.class_grade ?? "",
-        mode_preference: sp.mode_preference ?? "both",
-        subjects_of_interest: sp.subjects_of_interest ?? [],
-      });
-    }
-    setIsEditing(true);
-  }
-
-  function cancelEdit() {
-    setIsEditing(false);
-  }
-
-  function addSubject(sub: string) {
-    const trimmed = sub.trim();
-    if (!trimmed) return;
-    if (spDraft.subjects_of_interest.map(s => s.toLowerCase()).includes(trimmed.toLowerCase())) return;
-    setSpDraft(prev => ({ ...prev, subjects_of_interest: [...prev.subjects_of_interest, trimmed] }));
-    setSubjectInput("");
-  }
-
-  function removeSubject(sub: string) {
-    setSpDraft(prev => ({ ...prev, subjects_of_interest: prev.subjects_of_interest.filter(s => s !== sub) }));
-  }
-
-  async function handleSave() {
-    if (!draft.full_name.trim()) return toast.error("Full name is required.");
-    if (!/^[a-zA-Z\s'-]+$/.test(draft.full_name.trim())) return toast.error("Name can only contain letters, hyphens, apostrophes, and spaces.");
-    if (draft.full_name.length > 80) return toast.error("Name must be 80 characters or less.");
-    if (!draft.city.trim()) return toast.error("City is required.");
-    if (!spDraft.class_grade) return toast.error("Grade / level is required.");
-    if (spDraft.subjects_of_interest.length === 0) return toast.error("Please add at least one subject of interest.");
-
-    setSaving(true);
-    const { error: pErr } = await supabase.from("profiles").update({
-      full_name: draft.full_name.trim(),
-      city: draft.city.trim(),
-      area: draft.area.trim(),
-    }).eq("id", userId);
-    if (pErr) { setSaving(false); return toast.error(pErr.message); }
-
-    if (draft.phone.trim()) {
-      const { error: phoneErr } = await supabase.from("user_phones").upsert({
-        user_id: userId,
-        phone: draft.phone.trim(),
-      }, { onConflict: "user_id" });
-      if (phoneErr) { setSaving(false); return toast.error(phoneErr.message); }
-    }
-
-    const { error: sErr } = await supabase.from("student_profiles").upsert({
-      user_id: userId,
-      class_grade: spDraft.class_grade || null,
-      mode_preference: spDraft.mode_preference,
-      subjects_of_interest: spDraft.subjects_of_interest,
-    }, { onConflict: "user_id" });
-    if (sErr) { setSaving(false); return toast.error(sErr.message); }
-
-    // Update local state to reflect saved changes
-    setSp((prev: any) => ({ ...prev, ...spDraft }));
-    me.full_name = draft.full_name.trim();
-    me.phone = draft.phone.trim();
-    me.city = draft.city.trim();
-    me.area = draft.area.trim();
-
-    setSaving(false);
-    toast.success("Profile saved!");
-    setIsEditing(false);
-  }
-
-  const inputCls = "w-full h-11 px-3 rounded-xl border border-[#E2E8F0] bg-[#F8F9FE] text-sm font-medium text-[#1A1A1A] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all";
-  const labelCls = "text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1 block";
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">
-            {isEditing ? "Edit Your Profile" : "Your Learning Profile"}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {isEditing
-              ? "Update your personal details and learning preferences."
-              : "Manage your grade level and subject interests."}
-          </p>
-        </div>
-        {isEditing ? (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="rounded-full border-border text-[#1A1A1A] hover:bg-slate-100"
-              onClick={cancelEdit}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-[#4665FF] hover:bg-[#4665FF]/90 rounded-full"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? "Saving…" : "Save Profile"}
-            </Button>
-          </div>
-        ) : (
-          <Button
-            className="bg-[#4665FF] hover:bg-[#4665FF]/90 rounded-full"
-            onClick={enterEdit}
-          >
-            <Pencil className="mr-2 h-4 w-4" /> Edit Profile
-          </Button>
-        )}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm space-y-6">
-        {/* Personal Details */}
-        <div>
-          <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Personal Details</h3>
-          {isEditing ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Full Name</label>
-                <Input className={inputCls} value={draft.full_name} onChange={e => setDraft(p => ({ ...p, full_name: e.target.value }))} maxLength={80} />
-              </div>
-              <div>
-                <label className={labelCls}>Email Address</label>
-                <Input className={`${inputCls} opacity-60 cursor-not-allowed`} value={email ?? ""} disabled />
-              </div>
-              <div>
-                <label className={labelCls}>Phone Number</label>
-                <Input className={inputCls} value={draft.phone} onChange={e => setDraft(p => ({ ...p, phone: e.target.value }))} maxLength={20} placeholder="+91 9876543210" />
-              </div>
-              <div>
-                <label className={labelCls}>City</label>
-                <Input className={inputCls} value={draft.city} onChange={e => setDraft(p => ({ ...p, city: e.target.value }))} maxLength={50} />
-              </div>
-              <div>
-                <label className={labelCls}>Area</label>
-                <Input className={inputCls} value={draft.area} onChange={e => setDraft(p => ({ ...p, area: e.target.value }))} maxLength={80} />
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <ProfileItem label="Full Name" value={capitalize(me?.full_name)} />
-              <ProfileItem label="Email Address" value={email} />
-              <ProfileItem label="Phone Number" value={me?.phone} />
-              <ProfileItem label="City" value={capitalize(me?.city)} />
-              <ProfileItem label="Area" value={capitalize(me?.area)} />
-            </div>
-          )}
-        </div>
-
-        {/* Learning Preferences */}
-        {(sp || isEditing) && (
-          <div className="border-t border-border/80 pt-6">
-            <h3 className="text-base font-bold text-[#1A1A1A] mb-4">Learning Preferences</h3>
-            {isEditing ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelCls}>Grade / Level</label>
-                    <Select value={spDraft.class_grade} onValueChange={v => setSpDraft(p => ({ ...p, class_grade: v }))}>
-                      <SelectTrigger className={inputCls}>
-                        <SelectValue placeholder="Select grade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className={labelCls}>Mode Preference</label>
-                    <Select value={spDraft.mode_preference} onValueChange={v => setSpDraft(p => ({ ...p, mode_preference: v as any }))}>
-                      <SelectTrigger className={inputCls}>
-                        <SelectValue placeholder="Select mode" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="online">Online</SelectItem>
-                        <SelectItem value="offline">In-person</SelectItem>
-                        <SelectItem value="both">Online &amp; In-person</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <label className={labelCls}>Subjects of Interest</label>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {spDraft.subjects_of_interest.map((sub, i) => (
-                      <Badge key={i} variant="secondary" className="bg-[#4665FF]/10 text-[#4665FF] border-0 pr-1 flex items-center gap-1">
-                        {capitalize(sub)}
-                        <button type="button" onClick={() => removeSubject(sub)} className="ml-0.5 rounded-full hover:bg-[#4665FF]/20 p-0.5 transition-colors">
-                          <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none"><path d="M9 3L3 9M3 3l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <Select value={subjectInput} onValueChange={v => { addSubject(v); setSubjectInput(""); }}>
-                    <SelectTrigger className={inputCls}>
-                      <SelectValue placeholder="Add a subject…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SUBJECTS.filter(s => !spDraft.subjects_of_interest.map(x => x.toLowerCase()).includes(s.toLowerCase())).map(s => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <ProfileItem label="Grade / Level" value={sp?.class_grade} />
-                  <ProfileItem label="Mode Preference" value={sp?.mode_preference === "both" ? "Online & In-person" : capitalize(sp?.mode_preference)} />
-                </div>
-                {sp?.subjects_of_interest && sp.subjects_of_interest.length > 0 && (
-                  <div className="rounded-xl border border-border bg-slate-50/50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subjects of Interest</p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {sp.subjects_of_interest.map((sub: string, i: number) => (
-                        <Badge key={i} variant="secondary" className="bg-[#4665FF]/10 text-[#4665FF] border-0">
-                          {capitalize(sub)}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ---------------- Request lifecycle & inbox views ---------------- */
-
+/* ---------------- Teacher incoming requests tab view ---------------- */
 function TeacherRequestsView() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1727,24 +613,29 @@ function TeacherRequestsView() {
         });
       }
 
-      setRequests(reqs.map(r => ({ ...r, phone: phonesMap[r.viewer_id] || null })));
-    } catch (e) {
-      console.error(e);
+      setRequests(
+        reqs.map((r) => ({
+          ...r,
+          phone: phonesMap[r.viewer_id] || null,
+        })),
+      );
+    } catch (err) {
+      console.error("Error loading teacher requests:", err);
     } finally {
       setLoading(false);
     }
   }
 
-  async function updateStatus(id: string, newStatus: "accepted" | "declined") {
+  async function handleAction(requestId: string, status: "accepted" | "declined") {
     const { error } = await supabase
       .from("contact_events")
-      .update({ status: newStatus })
-      .eq("id", id);
+      .update({ status })
+      .eq("id", requestId);
     if (error) {
       toast.error(error.message);
       return;
     }
-    toast.success(`Request ${newStatus}!`);
+    toast.success(`Request ${status}.`);
     load();
   }
 
@@ -1752,67 +643,93 @@ function TeacherRequestsView() {
     load();
   }, []);
 
-  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading inbox…</div>;
+  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading contact requests…</div>;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">Requests Inbox</h2>
-      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm space-y-4">
-        {requests.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground">
-            <p className="font-semibold text-base">No requests yet</p>
-            <p className="text-sm mt-1">When students are interested in your profile, their requests will appear here.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border/50">
-            {requests.map((r, index) => {
-              const studentName = r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A Student";
-              const grade = r.profiles?.student_profiles?.class_grade || "Any Grade";
-              const subjects = (r.profiles?.student_profiles?.subjects_of_interest ?? []).map(capitalize).join(", ") || "Any Subject";
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A] font-display">Contact Requests</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Manage students requesting to view your contact information.</p>
+      </div>
 
-              return (
-                <div key={r.id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 first:pt-0 last:pb-0">
-                  <div>
-                    <h3 className="font-bold text-sm text-[#1A1A1A]">{studentName}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{grade} · {subjects}</p>
-                    {r.phone && r.status === "accepted" && (
-                      <div className="mt-2 flex items-center gap-3">
-                        <p className="text-xs font-semibold text-[#4665FF]">Phone: {r.phone}</p>
-                        <a href={`https://wa.me/${r.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-xs text-green-600 hover:underline font-semibold">
-                          WhatsApp
-                        </a>
-                      </div>
-                    )}
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Requested on {new Date(r.created_at).toLocaleDateString()}
-                    </p>
+      {requests.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-border p-12 text-center shadow-sm">
+          <MessageSquare className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+          <p className="font-semibold text-[#1A1A1A]">No requests received yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Pending student connection requests will appear here.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {requests.map((r) => {
+            const studentName = r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A Student";
+            const grade = r.profiles?.student_profiles?.class_grade || "Any Grade";
+            const subjects = (r.profiles?.student_profiles?.subjects_of_interest ?? []).map(capitalize).join(", ") || "Any Subject";
+
+            return (
+              <div key={r.id} className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4 relative">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold text-base text-[#1A1A1A]">{studentName}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">Requested on {new Date(r.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <Badge className={`capitalize rounded-full font-semibold px-3 py-1 border-0 ${
+                      r.status === "accepted" ? "bg-green-500/10 text-green-600" :
+                      r.status === "pending" ? "bg-amber-500/10 text-amber-600" :
+                      "bg-slate-100 text-muted-foreground"
+                    }`}>
+                      {r.status}
+                    </Badge>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {r.status === "pending" ? (
-                      <>
-                        <Button size="sm" onClick={() => updateStatus(r.id, "accepted")} className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold">
-                          Accept
-                        </Button>
-                        <Button size="sm" onClick={() => updateStatus(r.id, "declined")} variant="outline" className="rounded-full font-semibold">
-                          Decline
-                        </Button>
-                      </>
-                    ) : (
-                      <Badge className={`capitalize rounded-full font-semibold px-3 py-1 border-0 ${r.status === "accepted" ? "bg-green-500/10 text-green-600" : "bg-slate-100/80 text-muted-foreground"}`}>
-                        {r.status}
-                      </Badge>
+
+                  <div className="bg-[#F8F9FE] rounded-xl p-3 space-y-1.5 text-xs text-foreground/80">
+                    <p><span className="font-semibold text-muted-foreground">Grade:</span> {grade}</p>
+                    <p><span className="font-semibold text-muted-foreground">Subjects:</span> {subjects}</p>
+                    {r.status === "accepted" && (
+                      <div className="pt-2 border-t border-border/40 mt-2 space-y-1.5">
+                        <p className="font-medium">Email: {r.profiles?.email}</p>
+                        {r.phone && (
+                          <div className="flex items-center gap-3">
+                            <p className="font-semibold text-[#4665FF]">Phone: {r.phone}</p>
+                            <a href={`https://wa.me/${r.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline font-semibold">
+                              WhatsApp
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+
+                {r.status === "pending" && (
+                  <div className="flex items-center gap-2 pt-2 border-t border-[#E2E8F0]">
+                    <Button
+                      size="sm"
+                      onClick={() => handleAction(r.id, "accepted")}
+                      className="flex-1 bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold cursor-pointer"
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleAction(r.id, "declined")}
+                      className="flex-1 rounded-full border-border text-[#1A1A1A] hover:bg-slate-100 cursor-pointer"
+                    >
+                      Decline
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
+/* ---------------- Learner/Student outgoing requests tab view ---------------- */
 function LearnerRequestsView() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1853,19 +770,21 @@ function LearnerRequestsView() {
         });
       }
 
-      setRequests(reqs.map(r => ({ ...r, phone: phonesMap[r.teacher_id] || null })));
+      setRequests(
+        reqs.map(r => ({ ...r, phone: phonesMap[r.teacher_id] || null }))
+      );
     } catch (e) {
-      console.error(e);
+      console.error("Error loading learner requests:", e);
     } finally {
       setLoading(false);
     }
   }
 
-  async function cancelRequest(id: string) {
+  async function handleCancel(requestId: string) {
     const { error } = await supabase
       .from("contact_events")
       .update({ status: "cancelled" })
-      .eq("id", id);
+      .eq("id", requestId);
     if (error) {
       toast.error(error.message);
       return;
@@ -1878,31 +797,53 @@ function LearnerRequestsView() {
     load();
   }, []);
 
-  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading requests…</div>;
+  if (loading) return <div className="p-10 text-center text-muted-foreground">Loading sent requests…</div>;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">My Requests</h2>
-      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm space-y-4">
-        {requests.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground">
-            <p className="font-semibold text-base">No contact requests sent yet</p>
-            <p className="text-sm mt-1">Browse tutors and request contact details to get started.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border/50">
-            {requests.map((r) => {
-              const tutorName = r.teacher_profiles?.profiles?.full_name ? capitalize(r.teacher_profiles.profiles.full_name) : "Tutor Profile";
-              const fee = r.teacher_profiles ? (r.teacher_profiles.fee_min === r.teacher_profiles.fee_max ? `₹${r.teacher_profiles.fee_min}/hr` : `₹${r.teacher_profiles.fee_min}–₹${r.teacher_profiles.fee_max}/hr`) : "-";
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A] font-display">Contact Requests</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Track and manage connection requests sent to tutors.</p>
+      </div>
 
-              return (
-                <div key={r.id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 first:pt-0 last:pb-0">
-                  <div>
-                    <h3 className="font-bold text-sm text-[#1A1A1A]">{tutorName}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Fees: {fee}</p>
+      {requests.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-border p-12 text-center shadow-sm">
+          <MessageSquare className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+          <p className="font-semibold text-[#1A1A1A]">No requests sent yet</p>
+          <p className="text-xs text-muted-foreground mt-1">Tutors you request connection details from will be listed here.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {requests.map((r) => {
+            const tutorName = r.teacher_profiles?.profiles?.full_name ? capitalize(r.teacher_profiles.profiles.full_name) : "A Tutor";
+            const fee = r.teacher_profiles
+              ? r.teacher_profiles.fee_min === r.teacher_profiles.fee_max
+                ? `₹${r.teacher_profiles.fee_min}/hr`
+                : `₹${r.teacher_profiles.fee_min}–${r.teacher_profiles.fee_max}/hr`
+              : "-";
+
+            return (
+              <div key={r.id} className="bg-white rounded-2xl border border-border p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4 relative">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold text-base text-[#1A1A1A]">{tutorName}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">Requested on {new Date(r.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <Badge className={`capitalize rounded-full font-semibold px-3 py-1 border-0 ${
+                      r.status === "accepted" ? "bg-green-500/10 text-green-600" :
+                      r.status === "pending" ? "bg-amber-500/10 text-amber-600" :
+                      "bg-slate-100 text-muted-foreground"
+                    }`}>
+                      {r.status}
+                    </Badge>
+                  </div>
+
+                  <div className="bg-[#F8F9FE] rounded-xl p-3 space-y-1.5 text-xs text-foreground/80">
+                    <p><span className="font-semibold text-muted-foreground">Hourly Rate:</span> {fee}</p>
                     {r.status === "accepted" && (
-                      <div className="mt-2 text-xs space-y-1">
-                        <p className="font-medium text-foreground/85">Email: {r.teacher_profiles?.profiles?.email}</p>
+                      <div className="pt-2 border-t border-border/40 mt-2 space-y-1.5">
+                        <p className="font-medium">Email: {r.teacher_profiles?.profiles?.email}</p>
                         {r.phone && (
                           <div className="flex items-center gap-3">
                             <p className="font-semibold text-[#4665FF]">Phone: {r.phone}</p>
@@ -1913,32 +854,355 @@ function LearnerRequestsView() {
                         )}
                       </div>
                     )}
-                    <p className="text-[10px] text-muted-foreground mt-1.5">
-                      Requested on {new Date(r.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge className={`capitalize rounded-full font-semibold px-3 py-1 border-0 ${r.status === "accepted" ? "bg-green-500/10 text-green-600" : r.status === "pending" ? "bg-amber-500/10 text-amber-600" : "bg-slate-100/80 text-muted-foreground"}`}>
-                      {r.status}
-                    </Badge>
-                    {r.status === "pending" && (
-                      <Button size="sm" variant="ghost" onClick={() => cancelRequest(r.id)} className="text-destructive hover:bg-red-50 rounded-full text-xs">
-                        Cancel
-                      </Button>
-                    )}
                   </div>
                 </div>
-              );
-            })}
+
+                {r.status === "pending" && (
+                  <div className="pt-2 border-t border-border/40 w-full">
+                    <Button
+                      size="sm"
+                      onClick={() => handleCancel(r.id)}
+                      className="w-full bg-[#EF4444] hover:bg-[#DC2626] text-white rounded-full font-semibold cursor-pointer text-xs py-2"
+                    >
+                      Cancel Request
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Learner/Student/Parent views ---------------- */
+interface LearnerDashboardProps {
+  me: any;
+  savedTutors: string[];
+  onToggleSave: (id: string, isSaved: boolean) => void;
+}
+
+function LearnerDashboard({ me, savedTutors, onToggleSave }: LearnerDashboardProps) {
+  const [tutors, setTutors] = useState<any[]>([]);
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [loadingTutors, setLoadingTutors] = useState(true);
+  const set = <K extends keyof FilterState>(k: K, v: FilterState[K]) => setFilters((p) => ({ ...p, [k]: v }));
+
+  // Load tutors on load
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("teacher_profiles")
+          .select(
+            "user_id, bio, years_experience, fee_min, fee_max, mode, rating_avg, rating_count, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject, level, board)",
+          )
+          .eq("is_active", true);
+        if (error) throw error;
+        setTutors(data ?? []);
+      } catch (err) {
+        console.error("Error loading tutors:", err);
+      } finally {
+        setLoadingTutors(false);
+      }
+    })();
+  }, []);
+
+  const filteredTutors = useMemo(() => {
+    let list = [...tutors];
+
+    return list.filter((r) => {
+      const isSaved = savedTutors.includes(r.user_id);
+      if (filters.favouritesOnly && !isSaved) return false;
+      if (filters.q && !`${r.profiles?.full_name ?? ""} ${r.bio ?? ""}`.toLowerCase().includes(filters.q.toLowerCase()))
+        return false;
+      if (filters.city && !`${r.profiles?.city ?? ""} ${r.profiles?.area ?? ""}`.toLowerCase().includes(filters.city.toLowerCase()))
+        return false;
+      if (filters.language && !(r.languages ?? []).some((l: string) => l.toLowerCase().includes(filters.language.toLowerCase())))
+        return false;
+      const subs = r.teacher_subjects ?? [];
+      if (filters.subject !== "any" && !subs.some((s: any) => s.subject === filters.subject)) return false;
+      if (filters.level !== "any" && !subs.some((s: any) => s.level === filters.level)) return false;
+      if (filters.board !== "any" && !subs.some((s: any) => s.board === filters.board)) return false;
+      
+      // Filter rating & fee bounds
+      if (filters.feeMax < 5000 && r.fee_min > filters.feeMax) return false;
+      if (filters.minRating > 0 && (r.rating_avg ?? 0) < filters.minRating) return false;
+
+      return true;
+    });
+  }, [tutors, filters, savedTutors]);
+
+  const sortedTutors = useMemo(() => {
+    let list = [...filteredTutors];
+    if (filters.sort === "rating") {
+      list.sort((a, b) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0));
+    } else if (filters.sort === "experience") {
+      list.sort((a, b) => (b.years_experience ?? 0) - (a.years_experience ?? 0));
+    } else if (filters.sort === "fee_low") {
+      list.sort((a, b) => (a.fee_min ?? 0) - (b.fee_min ?? 0));
+    }
+    return list;
+  }, [filteredTutors, filters.sort]);
+
+  const activeCount = useMemo(() => {
+    let n = 0;
+    if (filters.q) n++;
+    if (filters.city) n++;
+    if (filters.subject !== "any") n++;
+    if (filters.level !== "any") n++;
+    if (filters.board !== "any") n++;
+    if (filters.mode !== "any") n++;
+    if (filters.gender !== "any") n++;
+    if (filters.language) n++;
+    if (filters.feeMax < 5000) n++;
+    if (filters.minRating > 0) n++;
+    if (filters.favouritesOnly) n++;
+    return n;
+  }, [filters]);
+
+  return (
+    <div className="space-y-6">
+      {/* Horizontal Filter Card */}
+      <div className="bg-white border border-border p-6 rounded-2xl shadow-sm space-y-6">
+        <div className="flex items-center justify-between border-b border-border/50 pb-4">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold">Filter Tutors</h2>
+            {activeCount > 0 && <Badge className="bg-primary-soft text-primary border-0">{activeCount}</Badge>}
+          </div>
+          {activeCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-auto px-2 py-1 text-xs hover:bg-[#E2E8F0]/50" onClick={() => setFilters(DEFAULT_FILTERS)}>
+              <X className="mr-1 h-3 w-3" /> Clear filters
+            </Button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          <FilterRow label="Search">
+            <Input placeholder="Name or keyword" value={filters.q} onChange={(e) => set("q", e.target.value)} />
+          </FilterRow>
+          <FilterRow label="Location">
+            <Input placeholder="City or area" value={filters.city} onChange={(e) => set("city", e.target.value)} />
+          </FilterRow>
+          <FilterRow label="Subject">
+            <SelectField value={filters.subject} onChange={(v) => set("subject", v)} options={[{ value: "any", label: "Any subject" }, ...SUBJECTS.map((s) => ({ value: s, label: s }))]} />
+          </FilterRow>
+          <FilterRow label="Level">
+            <SelectField value={filters.level} onChange={(v) => set("level", v)} options={[{ value: "any", label: "Any level" }, ...LEVELS.map((s) => ({ value: s, label: s }))]} />
+          </FilterRow>
+          <FilterRow label="Board">
+            <SelectField value={filters.board} onChange={(v) => set("board", v)} options={[{ value: "any", label: "Any board" }, ...BOARDS.map((s) => ({ value: s, label: s }))]} />
+          </FilterRow>
+          <FilterRow label="Mode">
+            <SelectField value={filters.mode} onChange={(v) => set("mode", v)} options={MODES} />
+          </FilterRow>
+          <FilterRow label="Teacher gender">
+            <SelectField value={filters.gender} onChange={(v) => set("gender", v)} options={[
+              { value: "any", label: "Any gender" },
+              { value: "male", label: "Male" },
+              { value: "female", label: "Female" },
+              { value: "other", label: "Other" },
+            ]} />
+          </FilterRow>
+          <FilterRow label="Language">
+            <Input placeholder="e.g. English" value={filters.language} onChange={(e) => set("language", e.target.value)} />
+          </FilterRow>
+          
+          {/* Max Hourly Fee */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Max Hourly Fee</span>
+              <span className="text-sm font-bold text-[#4665FF] font-display">₹{filters.feeMax}{filters.feeMax >= 5000 ? "+" : ""}/hr</span>
+            </div>
+            <Slider value={[filters.feeMax]} min={100} max={5000} step={100} onValueChange={([v]) => set("feeMax", v)} />
+            <div className="flex justify-between text-[10px] font-semibold text-muted-foreground">
+              <span>₹100</span>
+              <span>₹5,000+</span>
+            </div>
+          </div>
+
+          {/* Min Rating */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Min Rating</span>
+              <span className="text-sm font-bold text-[#4665FF] font-display">{filters.minRating === 0 ? "Any" : `${filters.minRating}★ & above`}</span>
+            </div>
+            <div className="flex w-full bg-[#F8F9FE] p-1 rounded-xl border border-border/50">
+              {[0, 3, 4, 4.5].map((r) => {
+                const isActive = filters.minRating === r;
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => set("minRating", r)}
+                    className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 text-center flex items-center justify-center gap-0.5 cursor-pointer ${
+                      isActive
+                        ? "bg-[#4665FF] text-white shadow-sm font-bold"
+                        : "text-muted-foreground hover:bg-[#E2E8F0]/40 hover:text-foreground"
+                    }`}
+                  >
+                    {r === 0 ? "Any" : (
+                      <>
+                        <span>{r}</span>
+                        <Star className={`h-3 w-3 ${isActive ? 'fill-white text-white' : 'fill-muted-foreground text-muted-foreground'}`} />
+                        <span className="text-[9px] font-normal">+</span>
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Favourites only toggle */}
+          <div className="flex items-center gap-2.5 pt-6 select-none">
+            <Checkbox
+              id="favourites-only-dash"
+              checked={filters.favouritesOnly}
+              onCheckedChange={(checked) => set("favouritesOnly", !!checked)}
+            />
+            <label htmlFor="favourites-only-dash" className="text-sm font-semibold text-foreground cursor-pointer flex items-center gap-1.5">
+              <Heart className={`h-3.5 w-3.5 ${filters.favouritesOnly ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+              Favourites only
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground font-medium">
+          Showing <span className="font-bold text-[#4665FF] font-display">{sortedTutors.length}</span> tutor{sortedTutors.length === 1 ? "" : "s"}
+        </p>
+        <div className="w-48">
+          <SelectField value={filters.sort} onChange={(v) => set("sort", v)} options={SORTS} />
+        </div>
+      </div>
+
+      {/* Tutor Listings Grid */}
+      {loadingTutors ? (
+        <div className="py-20 text-center text-muted-foreground flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4665FF]"></div>
+          <span>Finding tutors...</span>
+        </div>
+      ) : sortedTutors.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-border p-16 text-center shadow-sm">
+          <SlidersHorizontal className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-[#1A1A1A]">No tutors found</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Try relaxing your search terms or changing the locality filter.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {sortedTutors.map((tutor) => {
+            const isSaved = savedTutors.includes(tutor.user_id);
+            return (
+              <TutorGridCard
+                key={tutor.user_id}
+                tutor={tutor}
+                isSaved={isSaved}
+                onToggleSave={() => onToggleSave(tutor.user_id, isSaved)}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TutorGridCard({ tutor, isSaved, onToggleSave }: { tutor: any; isSaved: boolean; onToggleSave: () => void }) {
+  const rating = Number(tutor.rating_avg || 0).toFixed(1);
+  const subjects = (tutor.teacher_subjects ?? []).map((s: any) => capitalize(s.subject)).join(", ");
+  const feeLabel = tutor.fee_min === tutor.fee_max ? `₹${tutor.fee_min}/hr` : `₹${tutor.fee_min}–${tutor.fee_max}/hr`;
+
+  return (
+    <div className="bg-white rounded-2xl border border-border p-5 text-center flex flex-col justify-between hover:shadow-md hover:border-[#4665FF]/20 transition-all shadow-sm relative group">
+      <div>
+        <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center mx-auto mb-4 border border-border overflow-hidden shrink-0">
+          {tutor.profiles?.avatar_url ? (
+            <img
+              src={tutor.profiles.avatar_url}
+              alt={tutor.profiles.full_name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="h-10 w-10 text-slate-400" />
+          )}
+        </div>
+        <h3 className="text-base font-bold text-[#1A1A1A] line-clamp-1">
+          {tutor.profiles?.full_name ? capitalize(tutor.profiles.full_name) : "Tutor Profile"}
+        </h3>
+        <p className="text-xs text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
+          <MapPin className="h-3 w-3 shrink-0 text-[#4665FF]" />
+          <span className="truncate">
+            {tutor.profiles?.area ? `${capitalize(tutor.profiles.area)}, ${capitalize(tutor.profiles.city)}` : tutor.profiles?.city ? capitalize(tutor.profiles.city) : "Local"}
+          </span>
+        </p>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-border/50 text-left space-y-2.5">
+        {subjects && (
+          <div>
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Subjects
+            </p>
+            <p className="text-xs text-foreground/80 font-medium line-clamp-1 mt-0.5">{subjects}</p>
           </div>
         )}
+        <div className="flex justify-between items-center text-xs">
+          <div>
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Hourly Fee
+            </p>
+            <p className="font-semibold text-foreground/90 mt-0.5">{feeLabel}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Rating
+            </p>
+            <p className="font-bold text-[#4665FF] flex items-center justify-end gap-0.5 mt-0.5">
+              <Star className="h-3.5 w-3.5 fill-current text-[#4665FF]" />
+              {rating}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mt-5 flex gap-2">
+        <Button
+          asChild
+          size="sm"
+          className="flex-1 rounded-full bg-[#4665FF] text-white hover:bg-[#4665FF]/95 font-medium transition-all shadow-sm cursor-pointer"
+        >
+          <Link to="/tutors/$id" params={{ id: tutor.user_id }}>
+            View Profile
+          </Link>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggleSave}
+          className="rounded-full h-9 w-9 hover:bg-slate-100 shrink-0 border border-border cursor-pointer"
+        >
+          <Heart className={`h-4 w-4 ${isSaved ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"}`} />
+        </Button>
       </div>
     </div>
   );
 }
 
-function LearnerSavedTutorsView() {
-  const [saved, setSaved] = useState<any[]>([]);
+/* ---------------- Learner Saved Tutors list view ---------------- */
+interface LearnerSavedTutorsViewProps {
+  savedTutors: string[];
+  onToggleSave: (id: string, isSaved: boolean) => void;
+}
+
+function LearnerSavedTutorsView({ savedTutors, onToggleSave }: LearnerSavedTutorsViewProps) {
+  const [savedList, setSavedList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -1957,13 +1221,14 @@ function LearnerSavedTutorsView() {
             rating_count, 
             fee_min, 
             fee_max, 
+            mode, 
             profiles:profiles!teacher_profiles_user_id_fkey(full_name, city, area, avatar_url),
             teacher_subjects(subject, level, board)
           )
         `)
         .eq("user_id", u.user.id);
       
-      setSaved(data ?? []);
+      setSavedList(data ?? []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -1971,43 +1236,37 @@ function LearnerSavedTutorsView() {
     }
   }
 
-  async function removeSave(savedId: string) {
-    const { error } = await supabase.from("saved_tutors" as any).delete().eq("id", savedId);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Removed from saved list.");
-    load();
-  }
-
   useEffect(() => {
     load();
-  }, []);
+  }, [savedTutors]);
 
   if (loading) return <div className="p-10 text-center text-muted-foreground">Loading saved list…</div>;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A]">Saved Tutors</h2>
-      {saved.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A] font-display">Saved Tutors</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">Explore tutors you have favourited.</p>
+      </div>
+      {savedList.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-border p-12 text-center shadow-sm">
           <Star className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
-          <p className="font-semibold">No saved tutors yet</p>
+          <p className="font-semibold text-[#1A1A1A]">No saved tutors yet</p>
           <p className="text-xs text-muted-foreground mt-1">Keep track of tutors you are interested in here.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {saved.map((s) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {savedList.map((s) => {
             const t = s.teacher_profiles;
             if (!t) return null;
+            const isSaved = savedTutors.includes(t.user_id);
             return (
-              <div key={s.id} className="relative">
-                <TutorGridCard tutor={t} />
-                <Button variant="ghost" size="icon" onClick={() => removeSave(s.id)} className="absolute right-4 top-4 rounded-full h-8 w-8 hover:bg-slate-100 text-red-500">
-                  <Heart className="h-4 w-4 fill-current" />
-                </Button>
-              </div>
+              <TutorGridCard
+                key={t.user_id}
+                tutor={t}
+                isSaved={isSaved}
+                onToggleSave={() => onToggleSave(t.user_id, isSaved)}
+              />
             );
           })}
         </div>
@@ -2016,17 +1275,23 @@ function LearnerSavedTutorsView() {
   );
 }
 
-/* ---------------- Shared components ---------------- */
-function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
+/* ---------------- Shared Filter Form elements ---------------- */
+function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border bg-slate-50/50 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-bold font-display text-[#1A1A1A]">{value}</p>
-      {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</Label>
+      {children}
     </div>
   );
 }
 
-// Quiet unused warning
-void dashboardPathForRole;
-
+function SelectField({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-full bg-[#F8F9FE]"><SelectValue /></SelectTrigger>
+      <SelectContent>
+        {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  );
+}

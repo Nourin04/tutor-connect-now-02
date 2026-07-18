@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/site/AppHeader";
-import { AppFooter } from "@/components/site/AppFooter";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -380,7 +380,7 @@ function TutorProfilePage() {
           </aside>
         </div>
       </main>
-      <AppFooter />
+
     </div>
   );
 }
