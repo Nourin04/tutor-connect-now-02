@@ -126,8 +126,12 @@ function Header() {
   }, []);
 
   async function signOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/", replace: true });
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Sign out error:", e);
+    }
+    window.location.href = "/";
   }
 
   return (
@@ -158,7 +162,11 @@ function Header() {
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-md font-semibold">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-md font-semibold cursor-pointer"
+                  >
                     <User className="mr-2 h-4 w-4" />
                     <span className="hidden max-w-[140px] truncate sm:inline">{email}</span>
                   </Button>
@@ -180,14 +188,23 @@ function Header() {
                       Find tutors
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={signOut}
+                    className="text-destructive focus:text-destructive cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={signOut}
-                className="rounded-md font-semibold"
+                className="rounded-md font-semibold cursor-pointer text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
               >
+                <LogOut className="mr-1.5 h-3.5 w-3.5" />
                 Logout
               </Button>
             </div>

@@ -127,8 +127,12 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
   }, []);
 
   async function signOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/", replace: true });
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Sign out error:", e);
+    }
+    window.location.href = "/";
   }
 
   const totalUnread = unreadCount;
@@ -234,20 +238,48 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Static Profile Avatar */}
-                <div className="h-9 w-9 rounded-full border border-border relative overflow-hidden shrink-0">
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={fullName ?? "Profile"}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-xs font-bold text-[#4665FF]">
-                      {fullName ? capitalize(fullName).slice(0, 1) : <User className="h-4 w-4" />}
-                    </div>
-                  )}
-                </div>
+                {/* Profile Avatar Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="h-9 w-9 rounded-full border border-border relative overflow-hidden shrink-0 cursor-pointer hover:ring-2 hover:ring-[#4665FF]/40 transition-all">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={fullName ?? "Profile"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-xs font-bold text-[#4665FF]">
+                          {fullName ? (
+                            capitalize(fullName).slice(0, 1)
+                          ) : (
+                            <User className="h-4 w-4" />
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="text-xs text-muted-foreground truncate">
+                      {email} ({role ?? "user"})
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to={dashboardPathForRole(role)}>
+                        <User className="mr-2 h-4 w-4" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={signOut}
+                      className="text-destructive focus:text-destructive cursor-pointer"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ) : (
               <>
