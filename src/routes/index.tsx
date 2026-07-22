@@ -130,7 +130,7 @@ function Header() {
               </Link>
               <Button
                 size="sm"
-                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft"
+                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
                 asChild
               >
                 <Link to="/auth" search={{ mode: "signup" }}>
@@ -142,7 +142,7 @@ function Header() {
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-full font-semibold">
+                  <Button variant="outline" size="sm" className="rounded-md font-semibold">
                     <User className="mr-2 h-4 w-4" />
                     <span className="hidden max-w-[140px] truncate sm:inline">{email}</span>
                   </Button>
@@ -170,7 +170,7 @@ function Header() {
                 size="sm"
                 variant="outline"
                 onClick={signOut}
-                className="rounded-full font-semibold"
+                className="rounded-md font-semibold"
               >
                 Logout
               </Button>
@@ -186,7 +186,7 @@ function Header() {
               </Link>
               <Button
                 size="sm"
-                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft"
+                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
                 asChild
               >
                 <Link to="/auth" search={{ mode: "signup" }}>
@@ -240,21 +240,28 @@ function Hero() {
                 <Button
                   asChild
                   size="lg"
-                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full px-8 shadow-md font-semibold"
+                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md px-8 shadow-md font-semibold"
                 >
                   <Link to={dashboardPathForRole(role)}>Go to Dashboard</Link>
                 </Button>
               ) : (
                 <>
-                  <Button asChild size="lg" className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full px-8 shadow-md font-semibold">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md px-8 shadow-md font-semibold"
+                  >
                     <Link to="/auth" search={{ mode: "signup" }}>
                       Get started
                     </Link>
                   </Button>
-                  <Button asChild size="lg" variant="outline" className="rounded-full px-8 border-border hover:bg-slate-50 font-semibold">
-                    <Link to="/tutors">
-                      Browse Tutors
-                    </Link>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="rounded-md px-8 border-border hover:bg-slate-50 font-semibold"
+                  >
+                    <Link to="/tutors">Browse Tutors</Link>
                   </Button>
                 </>
               )}
@@ -435,7 +442,7 @@ function ForTeachers() {
               </ul>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button
-                  className="bg-white text-[#4665FF] hover:bg-white/90 rounded-full font-semibold"
+                  className="bg-white text-[#4665FF] hover:bg-white/90 rounded-md font-semibold"
                   asChild
                 >
                   <Link to="/auth" search={{ mode: "signup", role: "teacher" }}>
@@ -608,7 +615,7 @@ function CTASection() {
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button
               size="lg"
-              className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-md"
+              className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-md"
               asChild
             >
               <Link to="/auth" search={{ mode: "signup" }}>
@@ -618,7 +625,7 @@ function CTASection() {
             <Button
               size="lg"
               variant="outline"
-              className="border-background/30 bg-transparent text-background hover:bg-background/10 hover:text-background rounded-full font-semibold"
+              className="border-background/30 bg-transparent text-background hover:bg-background/10 hover:text-background rounded-md font-semibold"
               asChild
             >
               <Link to="/auth" search={{ mode: "signup", role: "teacher" }}>

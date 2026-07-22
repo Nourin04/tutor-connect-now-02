@@ -11,15 +11,11 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Brand } from "./Brand";
 import { User, Bell, Check, LogOut } from "lucide-react";
-import {
-  fetchPrimaryRole,
-  type AppRole,
-  dashboardPathForRole,
-} from "@/lib/auth-helpers";
+import { fetchPrimaryRole, type AppRole, dashboardPathForRole } from "@/lib/auth-helpers";
 import { capitalize } from "@/lib/string-helpers";
 import { toast } from "sonner";
 
-export function AppHeader() {
+export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
   const navigate = useNavigate();
   const [isMounted, setIsMounted] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
@@ -85,9 +81,7 @@ export function AppHeader() {
         .update({ is_read: true } as any)
         .eq("id", id);
       if (error) throw error;
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-      );
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
       setUnreadCount((c) => Math.max(0, c - 1));
     } catch (e) {
       console.error(e);
@@ -142,12 +136,15 @@ export function AppHeader() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-lg">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div
+          className={`mx-auto flex h-16 items-center justify-between ${
+            fullWidth ? "max-w-none w-full px-5" : "max-w-7xl px-4 sm:px-6 lg:px-8"
+          }`}
+        >
           <div className="flex items-center gap-6">
             <Brand />
           </div>
           <div className="flex items-center gap-3">
-
             {!isMounted ? (
               <>
                 <Link
@@ -160,7 +157,7 @@ export function AppHeader() {
                 <Button
                   size="sm"
                   asChild
-                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft"
+                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
                 >
                   <Link to="/auth" search={{ mode: "signup" }}>
                     Get started
@@ -168,11 +165,15 @@ export function AppHeader() {
                 </Button>
               </>
             ) : email ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 {/* Notifications Bell */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full border border-border hover:bg-muted relative shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-md border border-border hover:bg-muted relative shrink-0"
+                    >
                       <Bell className="h-4 w-4" />
                       {totalUnread > 0 && (
                         <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground animate-pulse">
@@ -181,11 +182,18 @@ export function AppHeader() {
                       )}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-96 p-0 max-h-[500px] overflow-y-auto" onCloseAutoFocus={(e) => e.preventDefault()}>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-96 p-0 max-h-[500px] overflow-y-auto"
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
                       <span className="text-sm font-bold text-[#1A1A1A]">Notifications</span>
                       {unreadCount > 0 && (
-                        <button onClick={markAllNotificationsAsRead} className="text-xs text-[#4665FF] hover:underline font-semibold">
+                        <button
+                          onClick={markAllNotificationsAsRead}
+                          className="text-xs text-[#4665FF] hover:underline font-semibold"
+                        >
                           Mark all read
                         </button>
                       )}
@@ -199,14 +207,23 @@ export function AppHeader() {
                         </div>
                       ) : (
                         notifications.map((n) => (
-                          <div key={n.id} className={`px-4 py-3 text-xs transition-colors flex items-start gap-2.5 ${!n.is_read ? 'bg-primary-soft/20 font-medium' : 'text-muted-foreground'}`}>
+                          <div
+                            key={n.id}
+                            className={`px-4 py-3 text-xs transition-colors flex items-start gap-2.5 ${!n.is_read ? "bg-primary-soft/20 font-medium" : "text-muted-foreground"}`}
+                          >
                             <div className="flex-1">
                               <p className="font-bold text-[#1A1A1A]">{n.title}</p>
                               <p className="mt-0.5 text-foreground/80">{n.message}</p>
-                              <p className="mt-1 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleDateString()}</p>
+                              <p className="mt-1 text-[10px] text-muted-foreground">
+                                {new Date(n.created_at).toLocaleDateString()}
+                              </p>
                             </div>
                             {!n.is_read && (
-                              <button onClick={() => markNotificationAsRead(n.id)} className="h-5 w-5 rounded-full border border-border flex items-center justify-center hover:bg-muted shrink-0" title="Mark as read">
+                              <button
+                                onClick={() => markNotificationAsRead(n.id)}
+                                className="h-5 w-5 rounded-full border border-border flex items-center justify-center hover:bg-muted shrink-0"
+                                title="Mark as read"
+                              >
                                 <Check className="h-3 w-3 text-[#4665FF]" />
                               </button>
                             )}
@@ -220,7 +237,11 @@ export function AppHeader() {
                 {/* Static Profile Avatar */}
                 <div className="h-9 w-9 rounded-full border border-border relative overflow-hidden shrink-0">
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt={fullName ?? "Profile"} className="h-full w-full object-cover" />
+                    <img
+                      src={avatarUrl}
+                      alt={fullName ?? "Profile"}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-xs font-bold text-[#4665FF]">
                       {fullName ? capitalize(fullName).slice(0, 1) : <User className="h-4 w-4" />}
@@ -240,7 +261,7 @@ export function AppHeader() {
                 <Button
                   size="sm"
                   asChild
-                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-full font-semibold shadow-soft"
+                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
                 >
                   <Link to="/auth" search={{ mode: "signup" }}>
                     Get started
