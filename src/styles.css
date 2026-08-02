@@ -42,7 +42,7 @@
 }
 
 :root {
-  --radius: 0.875rem;
+  --radius: 0.625rem;
   /* Brand: #5357FE */
   --background: oklch(1 0 0);
   --foreground: oklch(0.18 0.04 270);
