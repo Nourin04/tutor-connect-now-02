@@ -349,30 +349,8 @@ function TutorsPage() {
                 ]}
               />
             </FilterRow>
-            <FilterRow label="Board">
-              <SelectField
-                value={filters.board}
-                onChange={(v) => set("board", v)}
-                options={[
-                  { value: "any", label: "Any board" },
-                  ...BOARDS.map((s) => ({ value: s, label: s })),
-                ]}
-              />
-            </FilterRow>
             <FilterRow label="Mode">
               <SelectField value={filters.mode} onChange={(v) => set("mode", v)} options={MODES} />
-            </FilterRow>
-            <FilterRow label="Teacher gender">
-              <SelectField
-                value={filters.gender}
-                onChange={(v) => set("gender", v)}
-                options={[
-                  { value: "any", label: "Any gender" },
-                  { value: "male", label: "Male" },
-                  { value: "female", label: "Female" },
-                  { value: "other", label: "Other" },
-                ]}
-              />
             </FilterRow>
             <FilterRow label="Language">
               <Input
@@ -447,36 +425,11 @@ function TutorsPage() {
               </div>
             </div>
 
-            {/* Favourites only toggle */}
-            {currentUserId && (
-              <div className="flex items-center gap-2.5 pt-6 select-none">
-                <Checkbox
-                  id="favourites-only"
-                  checked={filters.favouritesOnly}
-                  onCheckedChange={(checked) => set("favouritesOnly", !!checked)}
-                />
-                <label
-                  htmlFor="favourites-only"
-                  className="text-sm font-semibold text-foreground cursor-pointer flex items-center gap-1.5"
-                >
-                  <Heart
-                    className={`h-3.5 w-3.5 ${filters.favouritesOnly ? "fill-red-500 text-red-500" : "text-muted-foreground"}`}
-                  />
-                  Favourites only
-                </label>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Results */}
         <section className="space-y-4">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Sort by</p>
-            <div className="w-48">
-              <SelectField value={filters.sort} onChange={(v) => set("sort", v)} options={SORTS} />
-            </div>
-          </div>
+
 
           {query.isLoading && (
             <div className="rounded-2xl border border-border bg-card p-10 text-center text-muted-foreground">

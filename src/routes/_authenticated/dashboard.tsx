@@ -1229,30 +1229,8 @@ function LearnerDashboard({ me, savedTutors, onToggleSave }: LearnerDashboardPro
               ]}
             />
           </FilterRow>
-          <FilterRow label="Board">
-            <SelectField
-              value={filters.board}
-              onChange={(v) => set("board", v)}
-              options={[
-                { value: "any", label: "Any board" },
-                ...BOARDS.map((s) => ({ value: s, label: s })),
-              ]}
-            />
-          </FilterRow>
           <FilterRow label="Mode">
             <SelectField value={filters.mode} onChange={(v) => set("mode", v)} options={MODES} />
-          </FilterRow>
-          <FilterRow label="Teacher gender">
-            <SelectField
-              value={filters.gender}
-              onChange={(v) => set("gender", v)}
-              options={[
-                { value: "any", label: "Any gender" },
-                { value: "male", label: "Male" },
-                { value: "female", label: "Female" },
-                { value: "other", label: "Other" },
-              ]}
-            />
           </FilterRow>
           <FilterRow label="Language">
             <Input
@@ -1327,25 +1305,8 @@ function LearnerDashboard({ me, savedTutors, onToggleSave }: LearnerDashboardPro
             </div>
           </div>
 
-          {/* Favourites only toggle */}
-          <div className="flex items-center gap-2.5 pt-6 select-none">
-            <Checkbox
-              id="favourites-only-dash"
-              checked={filters.favouritesOnly}
-              onCheckedChange={(checked) => set("favouritesOnly", !!checked)}
-            />
-            <label
-              htmlFor="favourites-only-dash"
-              className="text-sm font-semibold text-foreground cursor-pointer flex items-center gap-1.5"
-            >
-              <Heart
-                className={`h-3.5 w-3.5 ${filters.favouritesOnly ? "fill-red-500 text-red-500" : "text-muted-foreground"}`}
-              />
-              Favourites only
-            </label>
           </div>
         </div>
-      </div>
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground font-medium">
@@ -1353,9 +1314,6 @@ function LearnerDashboard({ me, savedTutors, onToggleSave }: LearnerDashboardPro
           <span className="font-bold text-[#4665FF] font-display">{sortedTutors.length}</span> tutor
           {sortedTutors.length === 1 ? "" : "s"}
         </p>
-        <div className="w-48">
-          <SelectField value={filters.sort} onChange={(v) => set("sort", v)} options={SORTS} />
-        </div>
       </div>
 
       {/* Tutor Listings Grid */}

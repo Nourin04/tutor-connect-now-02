@@ -276,13 +276,15 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
                         <DropdownMenuSeparator />
                       </>
                     )}
-                    <DropdownMenuItem
-                      onClick={signOut}
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </DropdownMenuItem>
+                    {role !== "student" && role !== "parent" && role !== "teacher" && (
+                      <DropdownMenuItem
+                        onClick={signOut}
+                        className="text-destructive focus:text-destructive cursor-pointer"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
