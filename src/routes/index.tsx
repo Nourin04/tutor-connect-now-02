@@ -101,133 +101,27 @@ function Landing() {
 }
 
 function Header() {
-  const navigate = useNavigate();
-  const [isMounted, setIsMounted] = useState(false);
-  const [email, setEmail] = useState<string | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
-
-  useEffect(() => {
-    setIsMounted(true);
-    let mounted = true;
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!mounted) return;
-      setEmail(data.user?.email ?? null);
-      if (data.user) setRole(await fetchPrimaryRole());
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
-      setEmail(s?.user?.email ?? null);
-      if (s?.user) setRole(await fetchPrimaryRole());
-      else setRole(null);
-    });
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  async function signOut() {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error("Sign out error:", e);
-    }
-    window.location.href = "/";
-  }
-
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Logo />
         <div className="flex items-center gap-2">
-          {!isMounted ? (
-            <>
-              <Link
-                to="/auth"
-                search={{ mode: "signin" }}
-                className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
-              >
-                Sign in
-              </Link>
-              <Button
-                size="sm"
-                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
-                asChild
-              >
-                <Link to="/auth" search={{ mode: "signup" }}>
-                  Get started
-                </Link>
-              </Button>
-            </>
-          ) : email ? (
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-md font-semibold cursor-pointer"
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    <span className="hidden max-w-[140px] truncate sm:inline">{email}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">
-                    Signed in as {role ?? "user"}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to={dashboardPathForRole(role)}>
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/tutors">
-                      <Search className="mr-2 h-4 w-4" />
-                      Find tutors
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={signOut}
-                    className="text-destructive focus:text-destructive cursor-pointer"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={signOut}
-                className="rounded-md font-semibold cursor-pointer text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-              >
-                <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                Logout
-              </Button>
-            </div>
-          ) : (
-            <>
-              <Link
-                to="/auth"
-                search={{ mode: "signin" }}
-                className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
-              >
-                Sign in
-              </Link>
-              <Button
-                size="sm"
-                className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
-                asChild
-              >
-                <Link to="/auth" search={{ mode: "signup" }}>
-                  Get started
-                </Link>
-              </Button>
-            </>
-          )}
+          <Link
+            to="/auth"
+            search={{ mode: "signin" }}
+            className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
+          >
+            Sign in
+          </Link>
+          <Button
+            size="sm"
+            className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
+            asChild
+          >
+            <Link to="/auth" search={{ mode: "signup" }}>
+              Get started
+            </Link>
+          </Button>
         </div>
       </div>
     </header>

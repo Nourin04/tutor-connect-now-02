@@ -152,7 +152,7 @@ function TutorProfilePage() {
           <h1 className="text-2xl font-bold">Tutor not found</h1>
           <p className="mt-2 text-muted-foreground">This profile may have been deactivated.</p>
           <Button asChild className="mt-6">
-            <Link to="/dashboard">Back to home</Link>
+            <Link to="/">Back to home</Link>
           </Button>
         </div>
       </div>
@@ -334,7 +334,7 @@ function TutorProfilePage() {
       <AppHeader />
       <main className="mx-auto max-w-7xl w-full px-4 py-10 sm:px-6 lg:px-8">
         <Link
-          to="/dashboard"
+          to="/"
           className="text-sm text-muted-foreground hover:text-primary transition-all"
         >
           ← Back to home

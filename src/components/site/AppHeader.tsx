@@ -265,13 +265,17 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
                       {email} ({role ?? "user"})
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to={dashboardPathForRole(role)}>
-                        <User className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                    {role !== "student" && role !== "parent" && role !== "admin" && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to={dashboardPathForRole(role)}>
+                            <User className="mr-2 h-4 w-4" />
+                            Dashboard
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
                     <DropdownMenuItem
                       onClick={signOut}
                       className="text-destructive focus:text-destructive cursor-pointer"
