@@ -1,4 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@300,400,500,700,800,900&display=swap');
+@import url("https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@300,400,500,700,800,900&display=swap");
 @import "tailwindcss" source(none);
 @import "tw-animate-css";
 @source "../src";
@@ -42,7 +42,7 @@
 }
 
 :root {
-  --radius: 0.875rem;
+  --radius: 0.625rem;
   /* Brand: #5357FE */
   --background: oklch(1 0 0);
   --foreground: oklch(0.18 0.04 270);
@@ -122,7 +122,12 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
   }
 

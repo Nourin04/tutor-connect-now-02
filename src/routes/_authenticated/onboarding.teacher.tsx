@@ -6,7 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Brand } from "@/components/site/Brand";
 import { toast } from "sonner";
 import { CheckCircle2, Circle, Plus, X, User } from "lucide-react";
@@ -15,11 +21,38 @@ export const Route = createFileRoute("/_authenticated/onboarding/teacher")({
   component: TeacherOnboarding,
 });
 
-const SUBJECTS = ["Mathematics", "Physics", "Chemistry", "Biology", "English", "Hindi", "Computer Science", "Economics", "Accountancy", "Music", "Art", "Other"];
-const LEVELS = ["Class 1-5", "Class 6-8", "Class 9-10", "Class 11-12", "Undergraduate", "Postgraduate", "Adult learner"];
+const SUBJECTS = [
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "English",
+  "Hindi",
+  "Computer Science",
+  "Economics",
+  "Accountancy",
+  "Music",
+  "Art",
+  "Other",
+];
+const LEVELS = [
+  "Class 1-5",
+  "Class 6-8",
+  "Class 9-10",
+  "Class 11-12",
+  "Undergraduate",
+  "Postgraduate",
+  "Adult learner",
+];
 const BOARDS = ["CBSE", "ICSE", "State", "IB", "IGCSE", "Other"];
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const SLOTS = ["Morning (6–10am)", "Late morning (10am–1pm)", "Afternoon (1–5pm)", "Evening (5–9pm)", "Night (9–11pm)"];
+const SLOTS = [
+  "Morning (6–10am)",
+  "Late morning (10am–1pm)",
+  "Afternoon (1–5pm)",
+  "Evening (5–9pm)",
+  "Night (9–11pm)",
+];
 
 function TeacherOnboarding() {
   const navigate = useNavigate();
@@ -29,9 +62,22 @@ function TeacherOnboarding() {
   const [userId, setUserId] = useState<string>("");
 
   // Section 1
-  const [s1, setS1] = useState({ full_name: "", email: "", phone: "", city: "", area: "", avatar_url: "" });
+  const [s1, setS1] = useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    city: "",
+    area: "",
+    avatar_url: "",
+  });
   // Section 2
-  const [s2, setS2] = useState({ highest_degree: "", university: "", years_experience: 0, certifications: [] as string[], other_experience: [] as string[] });
+  const [s2, setS2] = useState({
+    highest_degree: "",
+    university: "",
+    years_experience: 0,
+    certifications: [] as string[],
+    other_experience: [] as string[],
+  });
   // Section 3: subjects rows
   const [subjects, setSubjects] = useState<{ subject: string; level: string; board: string }[]>([
     { subject: "", level: "", board: "" },
@@ -59,15 +105,20 @@ function TeacherOnboarding() {
       ]);
       const p = pRes.data;
       const ph = phoneRes.data;
-      if (p) setS1({
-        full_name: p.full_name ?? "",
-        email: p.email ?? "",
-        phone: ph?.phone ?? "",
-        city: p.city ?? "",
-        area: p.area ?? "",
-        avatar_url: p.avatar_url ?? "",
-      });
-      const { data: tp } = await supabase.from("teacher_profiles").select("*").eq("user_id", u.user.id).maybeSingle();
+      if (p)
+        setS1({
+          full_name: p.full_name ?? "",
+          email: p.email ?? "",
+          phone: ph?.phone ?? "",
+          city: p.city ?? "",
+          area: p.area ?? "",
+          avatar_url: p.avatar_url ?? "",
+        });
+      const { data: tp } = await supabase
+        .from("teacher_profiles")
+        .select("*")
+        .eq("user_id", u.user.id)
+        .maybeSingle();
       if (tp) {
         setS2({
           highest_degree: tp.highest_degree ?? "",
@@ -88,7 +139,10 @@ function TeacherOnboarding() {
         });
         setStep(Math.min(tp.completion_step ?? 0, 3));
       }
-      const { data: subs } = await supabase.from("teacher_subjects").select("subject, level, board").eq("teacher_id", u.user.id);
+      const { data: subs } = await supabase
+        .from("teacher_subjects")
+        .select("subject, level, board")
+        .eq("teacher_id", u.user.id);
       if (subs && subs.length > 0) setSubjects(subs);
       setLoading(false);
     })();
@@ -163,10 +217,13 @@ function TeacherOnboarding() {
   }
 
   async function ensureTeacherProfile(completion: number) {
-    const { error } = await supabase.from("teacher_profiles").upsert({
-      user_id: userId,
-      completion_step: completion,
-    }, { onConflict: "user_id" });
+    const { error } = await supabase.from("teacher_profiles").upsert(
+      {
+        user_id: userId,
+        completion_step: completion,
+      },
+      { onConflict: "user_id" },
+    );
     if (error) throw error;
   }
 
@@ -261,7 +318,9 @@ function TeacherOnboarding() {
       </header>
       <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold tracking-tight">Set up your tutor profile</h1>
-        <p className="mt-2 text-muted-foreground">Each section saves separately — finish at your own pace.</p>
+        <p className="mt-2 text-muted-foreground">
+          Each section saves separately — finish at your own pace.
+        </p>
 
         {/* Stepper */}
         <ol className="mt-8 grid gap-2 sm:grid-cols-4">
@@ -274,12 +333,24 @@ function TeacherOnboarding() {
                   type="button"
                   onClick={() => setStep(i)}
                   className={`flex w-full items-start gap-2 rounded-xl border p-3 text-left transition-all ${
-                    current ? "border-primary bg-primary-soft" : done ? "border-border bg-card" : "border-border bg-card opacity-70"
+                    current
+                      ? "border-primary bg-primary-soft"
+                      : done
+                        ? "border-border bg-card"
+                        : "border-border bg-card opacity-70"
                   }`}
                 >
-                  {done ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" /> : <Circle className={`mt-0.5 h-4 w-4 ${current ? "text-primary" : "text-muted-foreground"}`} />}
+                  {done ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                  ) : (
+                    <Circle
+                      className={`mt-0.5 h-4 w-4 ${current ? "text-primary" : "text-muted-foreground"}`}
+                    />
+                  )}
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Section {i + 1}</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Section {i + 1}
+                    </p>
                     <p className="text-sm font-semibold">{s.title}</p>
                   </div>
                 </button>
@@ -345,9 +416,23 @@ function TeacherOnboarding() {
                   <Input type="number" min={0} max={60} value={s2.years_experience} onChange={(e) => setS2({ ...s2, years_experience: Number(e.target.value) })} />
                 </Field>
               </Grid>
-              <TagInput label="Certifications" values={s2.certifications} onChange={(v) => setS2({ ...s2, certifications: v })} placeholder="Add a certification and press Enter" />
-              <TagInput label="Other related experience" values={s2.other_experience} onChange={(v) => setS2({ ...s2, other_experience: v })} placeholder="e.g. Taught at XYZ School 2018-21" />
-              <NextRow onBack={() => setStep(0)} onNext={saveQualifications} label="Save & continue" />
+              <TagInput
+                label="Certifications"
+                values={s2.certifications}
+                onChange={(v) => setS2({ ...s2, certifications: v })}
+                placeholder="Add a certification and press Enter"
+              />
+              <TagInput
+                label="Other related experience"
+                values={s2.other_experience}
+                onChange={(v) => setS2({ ...s2, other_experience: v })}
+                placeholder="e.g. Taught at XYZ School 2018-21"
+              />
+              <NextRow
+                onBack={() => setStep(0)}
+                onNext={saveQualifications}
+                label="Save & continue"
+              />
             </Section>
           )}
 
@@ -413,7 +498,9 @@ function TeacherOnboarding() {
               <Grid>
                 <Field label={<span>Mode of teaching <span className="text-rose-500">*</span></span>}>
                   <Select value={s4.mode} onValueChange={(v) => setS4({ ...s4, mode: v as any })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="online">Online</SelectItem>
                       <SelectItem value="offline">In-person</SelectItem>
@@ -422,8 +509,13 @@ function TeacherOnboarding() {
                   </Select>
                 </Field>
                 <Field label="Gender (optional)">
-                  <Select value={s4.gender || "none"} onValueChange={(v) => setS4({ ...s4, gender: (v === "none" ? "" : v) as any })}>
-                    <SelectTrigger><SelectValue placeholder="Prefer not to say" /></SelectTrigger>
+                  <Select
+                    value={s4.gender || "none"}
+                    onValueChange={(v) => setS4({ ...s4, gender: (v === "none" ? "" : v) as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Prefer not to say" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Prefer not to say</SelectItem>
                       <SelectItem value="male">Male</SelectItem>
@@ -452,7 +544,12 @@ function TeacherOnboarding() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div className="space-y-5"><h2 className="text-xl font-semibold">{title}</h2>{children}</div>;
+  return (
+    <div className="space-y-5">
+      <h2 className="text-xl font-semibold">{title}</h2>
+      {children}
+    </div>
+  );
 }
 function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-4 sm:grid-cols-2">{children}</div>;
@@ -460,10 +557,24 @@ function Grid({ children }: { children: React.ReactNode }) {
 function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return <div className="space-y-1.5"><Label className="text-sm">{label}</Label>{children}</div>;
 }
-function NextRow({ onBack, onNext, label }: { onBack?: () => void; onNext: () => void; label: string }) {
+function NextRow({
+  onBack,
+  onNext,
+  label,
+}: {
+  onBack?: () => void;
+  onNext: () => void;
+  label: string;
+}) {
   return (
     <div className="mt-6 flex items-center justify-between">
-      {onBack ? <Button variant="outline" onClick={onBack}>Back</Button> : <span />}
+      {onBack ? (
+        <Button variant="outline" onClick={onBack}>
+          Back
+        </Button>
+      ) : (
+        <span />
+      )}
       <Button onClick={onNext}>{label}</Button>
     </div>
   );
@@ -472,8 +583,16 @@ function SelectRow({ label, value, onChange, options }: { label: React.ReactNode
   return (
     <Field label={label}>
       <Select value={value || undefined} onValueChange={onChange}>
-        <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
-        <SelectContent>{options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+        <SelectTrigger>
+          <SelectValue placeholder="Select…" />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o} value={o}>
+              {o}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
     </Field>
   );
@@ -489,7 +608,12 @@ function ChipPicker({ label, options, values, onChange }: { label: React.ReactNo
         {options.map((o) => {
           const on = values.includes(o);
           return (
-            <button key={o} type="button" onClick={() => toggle(o)} className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/40"}`}>
+            <button
+              key={o}
+              type="button"
+              onClick={() => toggle(o)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/40"}`}
+            >
               {o}
             </button>
           );
@@ -505,9 +629,17 @@ function TagInput({ label, values, onChange, placeholder }: { label: React.React
       <Label className="text-sm">{label}</Label>
       <div className="flex flex-wrap gap-2">
         {values.map((v, i) => (
-          <Badge key={i} variant="secondary" className="bg-primary-soft text-primary border-0 gap-1">
+          <Badge
+            key={i}
+            variant="secondary"
+            className="bg-primary-soft text-primary border-0 gap-1"
+          >
             {v}
-            <button onClick={() => onChange(values.filter((_, j) => j !== i))} aria-label="Remove" className="opacity-70 hover:opacity-100">
+            <button
+              onClick={() => onChange(values.filter((_, j) => j !== i))}
+              aria-label="Remove"
+              className="opacity-70 hover:opacity-100"
+            >
               <X className="h-3 w-3" />
             </button>
           </Badge>
@@ -526,7 +658,16 @@ function TagInput({ label, values, onChange, placeholder }: { label: React.React
             }
           }}
         />
-        <Button type="button" variant="outline" onClick={() => { if (draft.trim()) { onChange([...values, draft.trim()]); setDraft(""); } }}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (draft.trim()) {
+              onChange([...values, draft.trim()]);
+              setDraft("");
+            }
+          }}
+        >
           Add
         </Button>
       </div>
