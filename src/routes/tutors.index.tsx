@@ -17,8 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Star, MapPin, SlidersHorizontal, X, Heart, ArrowLeft } from "lucide-react";
+import { Star, MapPin, SlidersHorizontal, X, Heart, ArrowLeft, User } from "lucide-react";
 import { toast } from "sonner";
+import { capitalize } from "@/lib/string-helpers";
 
 export const Route = createFileRoute("/tutors/")({
   head: () => ({
@@ -429,131 +430,146 @@ function TutorsPage() {
         </div>
 
         <section className="space-y-4">
-
-
-          {query.isLoading && (
-            <div className="rounded-2xl border border-border bg-card p-10 text-center text-muted-foreground">
-              Loading tutors…
-            </div>
-          )}
-          {query.error && (
-            <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
-              Failed to load tutors.
-            </div>
-          )}
-          {!query.isLoading && rows.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
-              <p className="font-semibold">No tutors match your filters yet.</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Try widening location, subject or fee range.
+          {!query.isLoading && !query.error && (
+            <div className="flex items-center justify-between pb-2">
+              <p className="text-sm text-muted-foreground font-medium">
+                Showing{" "}
+                <span className="font-bold text-[#4665FF] font-display">{rows.length}</span> tutor
+                {rows.length === 1 ? "" : "s"}
               </p>
             </div>
           )}
 
-          <ul className="grid gap-4">
-            {rows.map((t: any) => {
-              const isSaved = (savedQuery.data ?? []).includes(t.user_id);
-              const ratingVal = Number(t.rating_avg);
-              return (
-                <li key={t.user_id} className="relative group">
-                  <Link
-                    to="/tutors/$id"
-                    params={{ id: t.user_id }}
-                    className="block rounded-2xl border border-border bg-card p-5 shadow-card transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft"
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row">
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary-soft text-primary text-xl font-bold">
-                        {t.profiles?.avatar_url ? (
-                          <img
-                            src={t.profiles.avatar_url}
-                            alt=""
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          (t.profiles?.full_name ?? "?").slice(0, 1).toUpperCase()
-                        )}
-                      </div>
-                      <div className="flex-1 pr-8">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <div>
-                            <h3 className="text-lg font-semibold">{t.profiles?.full_name}</h3>
-                            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-                              <MapPin className="h-3.5 w-3.5" />
-                              {[t.profiles?.area, t.profiles?.city].filter(Boolean).join(", ") ||
-                                "Location not set"}{" "}
-                              ·{" "}
-                              <span className="font-display font-semibold">
-                                {t.years_experience}+
-                              </span>{" "}
-                              yrs exp
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1 text-sm font-semibold">
-                            <Star className="h-4 w-4 fill-primary text-primary" />
-                            {ratingVal > 0 ? (
-                              <>
-                                <span className="font-display">{ratingVal.toFixed(1)}</span>
-                                <span className="font-normal text-muted-foreground font-display">
-                                  ({t.rating_count})
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-xs text-muted-foreground font-medium">
-                                New tutor
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {t.bio && (
-                          <p className="mt-2 line-clamp-2 text-sm text-foreground/80 font-normal">
-                            {t.bio}
-                          </p>
-                        )}
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {(t.teacher_subjects ?? []).slice(0, 5).map((s: any, i: number) => (
-                            <Badge
-                              key={i}
-                              variant="secondary"
-                              className="bg-primary-soft text-primary border-0"
-                            >
-                              {s.subject} · {s.level}
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="mt-3 flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground capitalize">
-                            {t.mode === "both" ? "Online & in-person" : t.mode}
-                          </span>
-                          <span className="font-semibold font-display">
-                            {t.fee_min === t.fee_max
-                              ? `₹${t.fee_min}/hr`
-                              : `₹${t.fee_min}–${t.fee_max}/hr`}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-
-                  {/* Save button overlaid */}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      toggleSaveMutation.mutate({ teacherId: t.user_id, isSaved });
-                    }}
-                    className="absolute right-4 top-4 rounded-md h-10 w-10 hover:bg-slate-100 z-10 border border-border bg-white shadow-sm"
-                  >
-                    <Heart
-                      className={`h-4 w-4 ${isSaved ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"}`}
-                    />
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
+          {query.isLoading ? (
+            <div className="py-20 text-center text-muted-foreground flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4665FF]"></div>
+              <span>Finding tutors...</span>
+            </div>
+          ) : query.error ? (
+            <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+              Failed to load tutors.
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-border p-16 text-center shadow-sm">
+              <SlidersHorizontal className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-[#1A1A1A]">No tutors found</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Try relaxing your search terms or changing the locality filter.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {rows.map((tutor: any) => {
+                const isSaved = (savedQuery.data ?? []).includes(tutor.user_id);
+                return (
+                  <TutorGridCard
+                    key={tutor.user_id}
+                    tutor={tutor}
+                    isSaved={isSaved}
+                    onToggleSave={() => toggleSaveMutation.mutate({ teacherId: tutor.user_id, isSaved })}
+                  />
+                );
+              })}
+            </div>
+          )}
         </section>
+      </div>
+    </div>
+  );
+}
+
+function TutorGridCard({
+  tutor,
+  isSaved,
+  onToggleSave,
+}: {
+  tutor: any;
+  isSaved: boolean;
+  onToggleSave: () => void;
+}) {
+  const rating = Number(tutor.rating_avg || 0).toFixed(1);
+  const subjects = (tutor.teacher_subjects ?? []).map((s: any) => capitalize(s.subject)).join(", ");
+  const feeLabel =
+    tutor.fee_min === tutor.fee_max
+      ? `₹${tutor.fee_min}/hr`
+      : `₹${tutor.fee_min}–${tutor.fee_max}/hr`;
+
+  return (
+    <div className="bg-white rounded-2xl border border-border pt-8 pb-5 px-5 text-center flex flex-col justify-between hover:shadow-md hover:border-[#4665FF]/20 transition-all shadow-sm relative group">
+      <div>
+        <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center mx-auto mb-4 border border-border overflow-hidden shrink-0">
+          {tutor.profiles?.avatar_url ? (
+            <img
+              src={tutor.profiles.avatar_url}
+              alt={tutor.profiles.full_name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="h-10 w-10 text-slate-400" />
+          )}
+        </div>
+        <h3 className="text-base font-bold text-[#1A1A1A] line-clamp-1">
+          {tutor.profiles?.full_name ? capitalize(tutor.profiles.full_name) : "Tutor Profile"}
+        </h3>
+        <p className="text-xs text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
+          <MapPin className="h-3 w-3 shrink-0 text-[#4665FF]" />
+          <span className="truncate">
+            {tutor.profiles?.area
+              ? `${capitalize(tutor.profiles.area)}, ${capitalize(tutor.profiles.city)}`
+              : tutor.profiles?.city
+                ? capitalize(tutor.profiles.city)
+                : "Local"}
+          </span>
+        </p>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-border/50 text-left space-y-2.5">
+        {subjects && (
+          <div>
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Subjects
+            </p>
+            <p className="text-xs text-foreground/80 font-medium line-clamp-1 mt-0.5">{subjects}</p>
+          </div>
+        )}
+        <div className="flex justify-between items-center text-xs">
+          <div>
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Hourly Fee
+            </p>
+            <p className="font-semibold text-foreground/90 mt-0.5">{feeLabel}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+              Rating
+            </p>
+            <p className="font-bold text-[#4665FF] flex items-center justify-end gap-0.5 mt-0.5">
+              <Star className="h-3.5 w-3.5 fill-current text-[#4665FF]" />
+              {rating}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mt-5 flex gap-2">
+        <Button
+          asChild
+          className="flex-1 h-10 rounded-md bg-[#4665FF] text-white hover:bg-[#4665FF]/95 font-medium transition-all shadow-sm cursor-pointer"
+        >
+          <Link to="/tutors/$id" params={{ id: tutor.user_id }}>
+            View Profile
+          </Link>
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onToggleSave}
+          className="rounded-md h-10 w-10 hover:bg-slate-100 shrink-0 border border-border cursor-pointer"
+        >
+          <Heart
+            className={`h-4 w-4 ${isSaved ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"}`}
+          />
+        </Button>
       </div>
     </div>
   );
