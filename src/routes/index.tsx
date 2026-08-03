@@ -130,7 +130,7 @@ function Hero() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
         {/* Centered Headline */}
         <div className="max-w-4xl mx-auto space-y-10">
-          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-slate-900 leading-[1.12]">
+          <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl text-slate-900 leading-[1.12]">
             Find the right tutor,
             <br />
             <span className="relative inline-block text-[#4665FF]">
@@ -218,7 +218,7 @@ function BrowseSubjects() {
     <section className="py-20 bg-slate-50/50 border-y border-slate-200/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
             Find the perfect tutor for every <span className="text-[#4665FF]">subjects.</span>
           </h2>
           <p className="mt-2 text-slate-600">
@@ -283,7 +283,7 @@ function ValueProps() {
     <section className="py-20 sm:py-28 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
+          <h2 className="font-display mt-4 text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
             Designed for learning that actually <span className="text-[#4665FF]">sticks.</span>
           </h2>
           <p className="mt-3 text-slate-600 max-w-none">
@@ -356,7 +356,7 @@ function HowItWorks() {
     <section id="how" className="bg-slate-50/50 py-20 sm:py-28 border-y border-slate-200/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-4xl mx-auto mb-12">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
             Start learning in just a few <span className="text-[#4665FF]">steps.</span>
           </h2>
           <p className="mt-2 text-slate-600 max-w-none">
@@ -448,7 +448,7 @@ function ForTeachers() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
         {/* Centered Header */}
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl text-slate-900 leading-[1.15] whitespace-nowrap">
+          <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl text-slate-900 leading-[1.15] whitespace-nowrap">
             Connect with students looking for the right <span className="text-[#4665FF]">tutor.</span>
           </h2>
           <p
@@ -545,7 +545,7 @@ function Testimonials() {
     <section className="bg-slate-50/50 py-20 sm:py-28 border-t border-slate-200/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
             Real stories from our <span className="text-[#4665FF]">community.</span>
           </h2>
           <p className="mt-3 text-slate-600">
@@ -618,7 +618,7 @@ function FAQ() {
     <section id="faq" className="py-20 sm:py-28 bg-background">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
             Your questions, <span className="text-[#4665FF]">answered.</span>
           </h2>
           <p className="mt-3 text-slate-600">
@@ -657,7 +657,7 @@ function CTASection() {
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[#4665FF] blur-3xl" />
             <div className="absolute -left-20 -bottom-20 h-72 w-72 rounded-full bg-[#4665FF] blur-3xl" />
           </div>
-          <h2 className="mx-auto max-w-2xl text-3xl font-extrabold tracking-tight sm:text-4xl text-white">
+          <h2 className="font-display mx-auto max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl text-white">
             Start learning with a tutor who actually fits you.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-slate-300 font-normal">
