@@ -17,6 +17,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorsIndexRouteImport } from './routes/tutors.index'
 import { Route as TutorsIdRouteImport } from './routes/tutors.$id'
+import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedOnboardingTeacherRouteImport } from './routes/_authenticated/onboarding.teacher'
@@ -61,6 +62,11 @@ const TutorsIdRoute = TutorsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => TutorsRoute,
 } as any)
+const AuthenticatedRequestsRoute = AuthenticatedRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/tutors': typeof TutorsRouteWithChildren
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/requests': typeof AuthenticatedRequestsRoute
   '/tutors/$id': typeof TutorsIdRoute
   '/tutors/': typeof TutorsIndexRoute
   '/onboarding/learner': typeof AuthenticatedOnboardingLearnerRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/requests': typeof AuthenticatedRequestsRoute
   '/tutors/$id': typeof TutorsIdRoute
   '/tutors': typeof TutorsIndexRoute
   '/onboarding/learner': typeof AuthenticatedOnboardingLearnerRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/tutors': typeof TutorsRouteWithChildren
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/requests': typeof AuthenticatedRequestsRoute
   '/tutors/$id': typeof TutorsIdRoute
   '/tutors/': typeof TutorsIndexRoute
   '/_authenticated/onboarding/learner': typeof AuthenticatedOnboardingLearnerRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/tutors'
     | '/admin'
     | '/dashboard'
+    | '/requests'
     | '/tutors/$id'
     | '/tutors/'
     | '/onboarding/learner'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/dashboard'
+    | '/requests'
     | '/tutors/$id'
     | '/tutors'
     | '/onboarding/learner'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/tutors'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
+    | '/_authenticated/requests'
     | '/tutors/$id'
     | '/tutors/'
     | '/_authenticated/onboarding/learner'
@@ -233,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TutorsIdRouteImport
       parentRoute: typeof TutorsRoute
     }
+    '/_authenticated/requests': {
+      id: '/_authenticated/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof AuthenticatedRequestsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -267,6 +286,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedRequestsRoute: typeof AuthenticatedRequestsRoute
   AuthenticatedOnboardingLearnerRoute: typeof AuthenticatedOnboardingLearnerRoute
   AuthenticatedOnboardingTeacherRoute: typeof AuthenticatedOnboardingTeacherRoute
 }
@@ -274,6 +294,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedRequestsRoute: AuthenticatedRequestsRoute,
   AuthenticatedOnboardingLearnerRoute: AuthenticatedOnboardingLearnerRoute,
   AuthenticatedOnboardingTeacherRoute: AuthenticatedOnboardingTeacherRoute,
 }

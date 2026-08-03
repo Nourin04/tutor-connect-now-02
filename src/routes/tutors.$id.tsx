@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/site/AppHeader";
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,8 +16,10 @@ import {
   Languages,
   GraduationCap,
   Briefcase,
-  Eye,
-  Coins,
+  Send,
+  CheckCircle2,
+  XCircle,
+  Hourglass,
 } from "lucide-react";
 import { fetchMyRoles } from "@/lib/auth-helpers";
 import { capitalize } from "@/lib/string-helpers";
@@ -36,6 +37,8 @@ export const Route = createFileRoute("/tutors/$id")({
   component: TutorProfilePage,
 });
 
+type ReqStatus = "pending" | "accepted" | "declined";
+
 function TutorProfilePage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -45,12 +48,32 @@ function TutorProfilePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [me, setMe] = useState<{ id: string; roles: string[] } | null>(null);
-  const [requestStatus, setRequestStatus] = useState<"none" | "pending" | "accepted" | "declined">(
-    "none",
-  );
-  const [phone, setPhone] = useState<string | null>(null);
-  const [hasContactEvent, setHasContactEvent] = useState(false);
+  const [request, setRequest] = useState<{ id: string; status: ReqStatus; message: string } | null>(null);
+  const [contact, setContact] = useState<{ email: string; phone: string } | null>(null);
   const [myReview, setMyReview] = useState<any | null>(null);
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function loadRequest(userId: string) {
+    const { data } = await supabase
+      .from("contact_events")
+      .select("id, status, message")
+      .eq("viewer_id", userId)
+      .eq("teacher_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) {
+      setRequest(data as any);
+      if ((data as any).status === "accepted") {
+        const { data: c } = await supabase.rpc("get_teacher_contact", { _teacher_id: id });
+        if (c && c.length > 0) setContact(c[0] as any);
+      }
+    } else {
+      setRequest(null);
+      setContact(null);
+    }
+  }
 
   useEffect(() => {
     let alive = true;
@@ -60,7 +83,7 @@ function TutorProfilePage() {
         supabase
           .from("teacher_profiles")
           .select(
-            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, email, city, area, avatar_url), teacher_subjects(subject, level, board)",
+            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject, level, board)",
           )
           .eq("user_id", id)
           .maybeSingle(),
@@ -81,24 +104,7 @@ function TutorProfilePage() {
       if (user) {
         const roles = await fetchMyRoles();
         setMe({ id: user.id, roles });
-        const { data: ev } = await supabase
-          .from("contact_events")
-          .select("id, status")
-          .eq("viewer_id", user.id)
-          .eq("teacher_id", id)
-          .maybeSingle();
-        if (ev) {
-          setRequestStatus(ev.status as any);
-          if (ev.status === "accepted") {
-            setHasContactEvent(true);
-            const { data: ph } = await supabase
-              .from("user_phones")
-              .select("phone")
-              .eq("user_id", id)
-              .maybeSingle();
-            if (ph) setPhone(ph.phone);
-          }
-        }
+        await loadRequest(user.id);
         const mine = (rRes.data as any[])?.find((r) => r.reviewer_id === user.id);
         if (mine) setMyReview(mine);
       }
@@ -109,28 +115,34 @@ function TutorProfilePage() {
     };
   }, [id]);
 
-  async function revealContact() {
-    if (!me) {
-      toast.error("Please sign in to see contact details.");
-      return;
-    }
+  async function sendRequest() {
+    if (!me) return toast.error("Please sign in first.");
+    if (message.length > 500) return toast.error("Message too long (max 500).");
+    setSending(true);
     const { error } = await supabase.from("contact_events").insert({
       viewer_id: me.id,
       teacher_id: id,
+      message: message.trim(),
+      status: "pending",
     });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    setRequestStatus("pending");
-    toast.success("Contact request sent to the tutor.");
+    setSending(false);
+    if (error) return toast.error(error.message);
+    toast.success("Request sent. The tutor will be notified.");
+    setMessage("");
+    await loadRequest(me.id);
   }
 
-  const [activeSubTab, setActiveSubTab] = useState<
-    "about" | "qualifications" | "availability" | "reviews"
-  >("about");
+  async function withdrawRequest() {
+    if (!request) return;
+    const { error } = await supabase.from("contact_events").delete().eq("id", request.id);
+    if (error) return toast.error(error.message);
+    toast.success("Request withdrawn.");
+    setRequest(null);
+    setContact(null);
+  }
 
-  const learner = me?.roles?.includes("student") || me?.roles?.includes("parent");
+  const learner = me && (me.roles.includes("student") || me.roles.includes("parent"));
+  const canReview = learner && request?.status === "accepted";
 
   if (loading) {
     return (
@@ -158,176 +170,6 @@ function TutorProfilePage() {
       </div>
     );
   }
-
-  const feesAndContactCard = (
-    <section className="rounded-2xl border border-border bg-card p-6 shadow-card space-y-4">
-      <h2 className="text-lg font-semibold flex items-center gap-2">
-        <Coins className="h-4.5 w-4.5 text-primary" />
-        Fees & Contact
-      </h2>
-
-      <div className="space-y-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-            Fees
-          </p>
-          <p className="mt-1 text-2xl font-bold font-display text-[#1A1A1A]">
-            {tutor.fee_min === tutor.fee_max
-              ? `₹${tutor.fee_min}`
-              : `₹${tutor.fee_min}–${tutor.fee_max}`}
-            <span className="text-base font-normal text-muted-foreground font-sans"> / hr</span>
-          </p>
-        </div>
-
-        <div className="w-full">
-          {!me ? (
-            <div className="space-y-2.5">
-              <Button
-                onClick={() =>
-                  navigate({
-                    to: "/auth",
-                    search: { mode: "signin", redirect: `/tutors/${id}` },
-                  })
-                }
-                className="w-full flex items-center justify-center gap-2 rounded-md h-10 font-semibold"
-              >
-                <Eye className="h-4 w-4" /> Request Contact
-              </Button>
-              <p className="text-center text-xs text-muted-foreground font-normal">
-                Please{" "}
-                <Link
-                  to="/auth"
-                  search={{ mode: "signin", redirect: `/tutors/${id}` }}
-                  className="font-semibold text-primary underline hover:text-primary/95 transition-all"
-                >
-                  sign in
-                </Link>{" "}
-                to contact this tutor.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="space-y-2.5 rounded-xl border border-border bg-surface p-3.5 text-sm">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-primary shrink-0" />
-                  <a
-                    className="break-all hover:underline text-foreground font-medium"
-                    href={`mailto:${tutor.profiles?.email}`}
-                  >
-                    {tutor.profiles?.email}
-                  </a>
-                </div>
-                {requestStatus === "accepted" && (
-                  <>
-                    <div className="flex items-center gap-2 border-t border-border/50 pt-2.5">
-                      <Phone className="h-4 w-4 text-primary shrink-0" />
-                      <a
-                        className="hover:underline font-semibold text-foreground"
-                        href={`tel:${phone}`}
-                      >
-                        {phone || "-"}
-                      </a>
-                    </div>
-                    {phone && (
-                      <div className="pt-2">
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="w-full h-10 rounded-md font-semibold text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
-                        >
-                          <a
-                            href={`https://wa.me/${phone.replace(/[^0-9]/g, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Chat on WhatsApp
-                          </a>
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {requestStatus === "none" && (
-                <Button className="w-full h-10 rounded-md font-semibold" onClick={revealContact}>
-                  <Eye className="mr-2 h-4 w-4" /> Request Contact
-                </Button>
-              )}
-              {requestStatus === "pending" && (
-                <Button
-                  className="w-full h-10 rounded-md font-semibold"
-                  disabled
-                  variant="secondary"
-                >
-                  Request Pending Approval
-                </Button>
-              )}
-              {requestStatus === "declined" && (
-                <Button
-                  className="w-full h-10 rounded-md font-semibold"
-                  disabled
-                  variant="destructive"
-                >
-                  Request Declined
-                </Button>
-              )}
-              {requestStatus === "accepted" && (
-                <div className="rounded-md bg-green-500/10 p-2.5 text-center text-xs font-semibold text-green-600 dark:text-green-400">
-                  Request accepted 🎉
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <p className="text-xs text-muted-foreground font-normal border-t border-border/40 pt-3">
-        TutorConnect doesn't charge any fee. Lessons are arranged directly between you and the
-        tutor.
-      </p>
-    </section>
-  );
-
-  const qualificationsCard = (
-    <Section title="Qualifications" icon={GraduationCap}>
-      <Row
-        label="Highest degree"
-        value={tutor.highest_degree ? capitalize(tutor.highest_degree) : "-"}
-      />
-      <Row
-        label="University / Institution"
-        value={tutor.university ? capitalize(tutor.university) : "-"}
-      />
-      <Row
-        label="Years of experience"
-        value={
-          <span>
-            <span className="font-display font-semibold">{tutor.years_experience}</span> year
-            {tutor.years_experience === 1 ? "" : "s"}
-          </span>
-        }
-      />
-      {(tutor.certifications ?? []).length > 0 && (
-        <Row label="Certifications" value={tutor.certifications.map(capitalize).join(", ")} />
-      )}
-      {(tutor.other_experience ?? []).length > 0 && (
-        <div className="border-t border-border pt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Other experience
-          </p>
-          <ul className="mt-2 space-y-1 text-sm font-normal">
-            {tutor.other_experience.map((e: string, i: number) => (
-              <li key={i} className="flex gap-2">
-                <Briefcase className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />
-                {capitalize(e)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </Section>
-  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col justify-between">
@@ -396,11 +238,27 @@ function TutorProfilePage() {
               </div>
             </section>
 
-            {/* Mobile-only Fees and Qualifications (stacked right below Profile details) */}
-            <div className="lg:hidden space-y-6">
-              {feesAndContactCard}
-              {qualificationsCard}
-            </div>
+            <Section title="Qualifications" icon={GraduationCap}>
+              <Row label="Highest degree" value={tutor.highest_degree ? capitalize(tutor.highest_degree) : "—"} />
+              <Row label="University / Institution" value={tutor.university ? capitalize(tutor.university) : "—"} />
+              <Row label="Years of experience" value={`${tutor.years_experience} year${tutor.years_experience === 1 ? "" : "s"}`} />
+              {(tutor.certifications ?? []).length > 0 && (
+                <Row label="Certifications" value={tutor.certifications.map(capitalize).join(", ")} />
+              )}
+              {(tutor.other_experience ?? []).length > 0 && (
+                <div className="border-t border-border pt-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Other experience</p>
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {tutor.other_experience.map((e: string, i: number) => (
+                      <li key={i} className="flex gap-2">
+                        <Briefcase className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />
+                        {capitalize(e)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </Section>
 
             <Section title="Subjects & boards">
               <div className="grid gap-2 sm:grid-cols-2">
@@ -438,7 +296,7 @@ function TutorProfilePage() {
             <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <h2 className="text-lg font-semibold">Reviews ({reviews.length})</h2>
 
-              {learner && hasContactEvent && requestStatus === "accepted" && (
+              {canReview && (
                 <ReviewForm
                   teacherId={id}
                   existing={myReview}
@@ -451,9 +309,9 @@ function TutorProfilePage() {
                   }}
                 />
               )}
-              {learner && requestStatus !== "accepted" && (
-                <p className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground font-normal">
-                  Reviews are only allowed after the tutor has accepted your contact request.
+              {learner && !canReview && (
+                <p className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">
+                  You can leave a review after this tutor accepts your contact request.
                 </p>
               )}
               {!me && (
@@ -499,11 +357,91 @@ function TutorProfilePage() {
             </section>
           </div>
 
-          {/* Right Column / Sticky Sidebar (Desktop only) */}
-          <div className="hidden lg:block space-y-6 lg:sticky lg:top-20 lg:self-start w-full">
-            {feesAndContactCard}
-            {qualificationsCard}
-          </div>
+          {/* Right Column / Sticky Sidebar */}
+          <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Fees</p>
+              <p className="mt-1 text-2xl font-bold">
+                {tutor.fee_min === tutor.fee_max ? `₹${tutor.fee_min}` : `₹${tutor.fee_min}–${tutor.fee_max}`}
+                <span className="text-base font-normal text-muted-foreground"> / hr</span>
+              </p>
+
+              <div className="mt-5">
+                {!me && (
+                  <Button asChild className="w-full">
+                    <Link to="/auth" search={{ mode: "signin", redirect: `/tutors/${id}` }}>
+                      Sign in to contact
+                    </Link>
+                  </Button>
+                )}
+                {me && !learner && (
+                  <p className="rounded-xl border border-dashed border-border bg-surface p-3 text-xs text-muted-foreground">
+                    Only students or parents can request contact.
+                  </p>
+                )}
+                {learner && !request && (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Introduce yourself and what you'd like help with (optional)"
+                      rows={3}
+                      maxLength={500}
+                    />
+                    <Button className="w-full" onClick={sendRequest} disabled={sending}>
+                      <Send className="mr-2 h-4 w-4" /> {sending ? "Sending…" : "Request contact"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      The tutor will be notified. You'll see their email and phone once they accept.
+                    </p>
+                  </div>
+                )}
+                {learner && request?.status === "pending" && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary-soft p-3 text-sm">
+                      <Hourglass className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Request pending — awaiting reply.</span>
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full" onClick={withdrawRequest}>
+                      Withdraw request
+                    </Button>
+                  </div>
+                )}
+                {learner && request?.status === "declined" && (
+                  <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                    <div className="flex items-center gap-2 font-medium text-destructive">
+                      <XCircle className="h-4 w-4" /> Request was declined.
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      This tutor isn't available right now. Try another tutor.
+                    </p>
+                  </div>
+                )}
+                {learner && request?.status === "accepted" && (
+                  <div className="space-y-2 rounded-xl border border-border bg-surface p-3 text-sm">
+                    <div className="flex items-center gap-2 text-primary font-medium">
+                      <CheckCircle2 className="h-4 w-4" /> Contact accepted
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-primary" />{" "}
+                      <a className="hover:underline" href={`tel:${contact?.phone}`}>
+                        {contact?.phone || "—"}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-primary" />{" "}
+                      <a className="break-all hover:underline" href={`mailto:${contact?.email}`}>
+                        {contact?.email || "—"}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                <p className="mt-3 text-xs text-muted-foreground">
+                  TutorConnect doesn't charge any fee. Lessons are arranged directly between you and the tutor.
+                </p>
+              </div>
+            </div>
+          </aside>
         </div>
       </main>
     </div>
@@ -557,17 +495,13 @@ function ReviewForm({
 
   async function submit() {
     if (rating < 1 || rating > 5) return;
-    if (comment.length > 1000) {
-      toast.error("Comment is too long (max 1000 characters).");
-      return;
-    }
+    if (comment.length > 1000) return toast.error("Comment is too long (max 1000 characters).");
     setSaving(true);
     const { data: userRes } = await supabase.auth.getUser();
     const reviewer_id = userRes.user?.id;
     if (!reviewer_id) {
       setSaving(false);
-      toast.error("Please sign in to leave a review.");
-      return;
+      return toast.error("Please sign in to leave a review.");
     }
     const { data, error } = await supabase
       .from("reviews")
@@ -580,10 +514,7 @@ function ReviewForm({
       )
       .single();
     setSaving(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) return toast.error(error.message);
     toast.success(existing ? "Review updated." : "Thanks for your review!");
     onSaved(data);
   }
@@ -614,6 +545,4 @@ function ReviewForm({
   );
 }
 
-// Unused import marker
 void Badge;
-void useNavigate;

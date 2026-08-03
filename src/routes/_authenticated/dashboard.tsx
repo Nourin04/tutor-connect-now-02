@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -37,8 +38,13 @@ import {
   ArrowLeft,
   Mail,
   Phone,
+  Inbox,
+  Pencil,
+  GraduationCap,
+  Hourglass,
+  MessageCircle,
 } from "lucide-react";
-import { fetchPrimaryRole, type AppRole } from "@/lib/auth-helpers";
+import { fetchPrimaryRole, type AppRole, dashboardPathForRole } from "@/lib/auth-helpers";
 import { TeacherProfileTab, LearnerProfileTab } from "@/components/site/ProfileTabs";
 import { toast } from "sonner";
 import { capitalize } from "@/lib/string-helpers";
@@ -936,7 +942,7 @@ function LearnerRequestsView() {
   async function handleCancel(requestId: string) {
     const { error } = await supabase
       .from("contact_events")
-      .update({ status: "cancelled" })
+      .delete()
       .eq("id", requestId);
     if (error) {
       toast.error(error.message);
