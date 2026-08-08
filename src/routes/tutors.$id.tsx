@@ -1,8 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppHeader } from "@/components/site/AppHeader";
-import { AppFooter } from "@/components/site/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,12 +22,16 @@ import {
   Hourglass,
 } from "lucide-react";
 import { fetchMyRoles } from "@/lib/auth-helpers";
+import { capitalize } from "@/lib/string-helpers";
 
 export const Route = createFileRoute("/tutors/$id")({
   head: () => ({
     meta: [
-      { title: "Tutor profile — TutorConnect" },
-      { name: "description", content: "View tutor qualifications, subjects, availability, fees, and reviews." },
+      { title: "Tutor Profile | TutorConnect" },
+      {
+        name: "description",
+        content: "View tutor qualifications, subjects, availability, fees, and reviews.",
+      },
     ],
   }),
   component: TutorProfilePage,
@@ -38,6 +41,7 @@ type ReqStatus = "pending" | "accepted" | "declined";
 
 function TutorProfilePage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const [tutor, setTutor] = useState<any | null>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,13 +83,15 @@ function TutorProfilePage() {
         supabase
           .from("teacher_profiles")
           .select(
-            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject, level, board)"
+            "user_id, bio, highest_degree, university, years_experience, certifications, other_experience, available_days, time_slots, mode, fee_min, fee_max, gender, languages, rating_avg, rating_count, is_active, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject, level, board)",
           )
           .eq("user_id", id)
           .maybeSingle(),
         supabase
           .from("reviews")
-          .select("id, rating, comment, created_at, reviewer_id, profiles!reviews_reviewer_id_fkey(full_name)")
+          .select(
+            "id, rating, comment, created_at, reviewer_id, profiles!reviews_reviewer_id_fkey(full_name)",
+          )
           .eq("teacher_id", id)
           .order("created_at", { ascending: false }),
         supabase.auth.getUser(),
@@ -135,11 +141,14 @@ function TutorProfilePage() {
     setContact(null);
   }
 
+  const learner = me && (me.roles.includes("student") || me.roles.includes("parent"));
+  const canReview = learner && request?.status === "accepted";
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
-        <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <Skeleton className="h-40 w-full rounded-2xl" />
           <Skeleton className="mt-4 h-60 w-full rounded-2xl" />
         </div>
@@ -154,28 +163,36 @@ function TutorProfilePage() {
         <div className="mx-auto max-w-xl px-4 py-20 text-center">
           <h1 className="text-2xl font-bold">Tutor not found</h1>
           <p className="mt-2 text-muted-foreground">This profile may have been deactivated.</p>
-          <Button asChild className="mt-6"><Link to="/tutors">Back to tutors</Link></Button>
+          <Button asChild className="mt-6">
+            <Link to="/">Back to home</Link>
+          </Button>
         </div>
       </div>
     );
   }
 
-  const learner = me && (me.roles.includes("student") || me.roles.includes("parent"));
-  const canReview = learner && request?.status === "accepted";
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col justify-between">
       <AppHeader />
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <Link to="/tutors" className="text-sm text-muted-foreground hover:text-primary">← Back to all tutors</Link>
-
-        <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_320px]">
+      <main className="mx-auto max-w-7xl w-full px-4 py-10 sm:px-6 lg:px-8">
+        <Link
+          to="/"
+          className="text-sm text-muted-foreground hover:text-primary transition-all"
+        >
+          ← Back to home
+        </Link>
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-start">
+          {/* Left Column */}
           <div className="space-y-6">
             <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-primary-soft text-2xl font-bold text-primary">
                   {tutor.profiles?.avatar_url ? (
-                    <img src={tutor.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={tutor.profiles.avatar_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     (tutor.profiles?.full_name ?? "?").slice(0, 1).toUpperCase()
                   )}
@@ -183,35 +200,61 @@ function TutorProfilePage() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h1 className="text-2xl font-bold">{tutor.profiles?.full_name}</h1>
+                      <h1 className="text-2xl font-bold">
+                        {tutor.profiles?.full_name ? capitalize(tutor.profiles.full_name) : ""}
+                      </h1>
                       <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                         <MapPin className="h-3.5 w-3.5" />
-                        {[tutor.profiles?.area, tutor.profiles?.city].filter(Boolean).join(", ") || "Location not set"}
+                        {[tutor.profiles?.area, tutor.profiles?.city]
+                          .filter(Boolean)
+                          .map(capitalize)
+                          .join(", ") || "Location not set"}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Star className="h-5 w-5 fill-primary text-primary" />
-                      <span className="text-lg font-semibold">{Number(tutor.rating_avg).toFixed(1)}</span>
-                      <span className="text-sm text-muted-foreground">({tutor.rating_count} reviews)</span>
+                      {Number(tutor.rating_avg) > 0 ? (
+                        <>
+                          <span className="text-lg font-semibold font-display">
+                            {Number(tutor.rating_avg).toFixed(1)}
+                          </span>
+                          <span className="text-sm text-muted-foreground font-display">
+                            ({tutor.rating_count} reviews)
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-sm text-muted-foreground font-semibold">
+                          New tutor
+                        </span>
+                      )}
                     </div>
                   </div>
-                  {tutor.bio && <p className="mt-4 text-sm leading-relaxed text-foreground/90">{tutor.bio}</p>}
+                  {tutor.bio && (
+                    <p className="mt-4 text-sm leading-relaxed text-foreground/80 font-normal">
+                      {tutor.bio}
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
 
             <Section title="Qualifications" icon={GraduationCap}>
-              <Row label="Highest degree" value={tutor.highest_degree || "—"} />
-              <Row label="University / Institution" value={tutor.university || "—"} />
+              <Row label="Highest degree" value={tutor.highest_degree ? capitalize(tutor.highest_degree) : "—"} />
+              <Row label="University / Institution" value={tutor.university ? capitalize(tutor.university) : "—"} />
               <Row label="Years of experience" value={`${tutor.years_experience} year${tutor.years_experience === 1 ? "" : "s"}`} />
               {(tutor.certifications ?? []).length > 0 && (
-                <Row label="Certifications" value={tutor.certifications.join(", ")} />
+                <Row label="Certifications" value={tutor.certifications.map(capitalize).join(", ")} />
               )}
               {(tutor.other_experience ?? []).length > 0 && (
                 <div className="border-t border-border pt-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Other experience</p>
                   <ul className="mt-2 space-y-1 text-sm">
-                    {tutor.other_experience.map((e: string, i: number) => <li key={i} className="flex gap-2"><Briefcase className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />{e}</li>)}
+                    {tutor.other_experience.map((e: string, i: number) => (
+                      <li key={i} className="flex gap-2">
+                        <Briefcase className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />
+                        {capitalize(e)}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               )}
@@ -221,19 +264,33 @@ function TutorProfilePage() {
               <div className="grid gap-2 sm:grid-cols-2">
                 {(tutor.teacher_subjects ?? []).map((s: any, i: number) => (
                   <div key={i} className="rounded-xl border border-border bg-background p-3">
-                    <p className="font-semibold">{s.subject}</p>
-                    <p className="text-xs text-muted-foreground">{s.level} · {s.board}</p>
+                    <p className="font-semibold">{capitalize(s.subject)}</p>
+                    <p className="text-xs text-muted-foreground font-normal">
+                      {s.level} · {s.board}
+                    </p>
                   </div>
                 ))}
-                {(tutor.teacher_subjects ?? []).length === 0 && <p className="text-sm text-muted-foreground">No subjects listed yet.</p>}
+                {(tutor.teacher_subjects ?? []).length === 0 && (
+                  <p className="text-sm text-muted-foreground">No subjects listed yet.</p>
+                )}
               </div>
             </Section>
 
             <Section title="Availability" icon={Clock}>
-              <Row label="Days" value={(tutor.available_days ?? []).join(", ") || "—"} />
-              <Row label="Time slots" value={(tutor.time_slots ?? []).join(", ") || "—"} />
-              <Row label="Mode" value={tutor.mode === "both" ? "Online & in-person" : tutor.mode} />
-              <Row label="Languages" value={(tutor.languages ?? []).join(", ") || "—"} icon={Languages} />
+              <Row
+                label="Days"
+                value={(tutor.available_days ?? []).map(capitalize).join(", ") || "-"}
+              />
+              <Row label="Time slots" value={(tutor.time_slots ?? []).join(", ") || "-"} />
+              <Row
+                label="Mode"
+                value={tutor.mode === "both" ? "Online & in-person" : capitalize(tutor.mode)}
+              />
+              <Row
+                label="Languages"
+                value={(tutor.languages ?? []).map(capitalize).join(", ") || "-"}
+                icon={Languages}
+              />
             </Section>
 
             <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
@@ -258,31 +315,49 @@ function TutorProfilePage() {
                 </p>
               )}
               {!me && (
-                <p className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">
-                  <Link to="/auth" className="font-semibold text-primary">Sign in</Link> as a student or parent to leave a review.
+                <p className="mt-4 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground font-normal">
+                  <Link to="/auth" className="font-semibold text-primary">
+                    Sign in
+                  </Link>{" "}
+                  as a student or parent to leave a review.
                 </p>
               )}
 
-              <ul className="mt-6 space-y-4">
+              <ul className="mt-6 space-y-4 font-normal">
                 {reviews.map((r) => (
-                  <li key={r.id} className="rounded-xl border border-border bg-background p-4">
+                  <li
+                    key={r.id}
+                    className="rounded-xl border border-border bg-background p-4 shadow-sm"
+                  >
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold">{r.profiles?.full_name ?? "A student"}</p>
+                      <p className="text-sm font-semibold">
+                        {r.profiles?.full_name ? capitalize(r.profiles.full_name) : "A student"}
+                      </p>
                       <div className="flex gap-0.5 text-primary">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-3.5 w-3.5 ${i < r.rating ? "fill-primary" : "text-muted-foreground/30"}`} />
+                          <Star
+                            key={i}
+                            className={`h-3.5 w-3.5 ${i < r.rating ? "fill-primary" : "text-muted-foreground/30"}`}
+                          />
                         ))}
                       </div>
                     </div>
                     {r.comment && <p className="mt-2 text-sm text-foreground/85">{r.comment}</p>}
-                    <p className="mt-2 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
+                    <p className="mt-2 text-[10px] text-muted-foreground">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </p>
                   </li>
                 ))}
-                {reviews.length === 0 && <p className="text-sm text-muted-foreground">No reviews yet — be the first!</p>}
+                {reviews.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No reviews yet. Be the first to share your experience!
+                  </p>
+                )}
               </ul>
             </section>
           </div>
 
+          {/* Right Column / Sticky Sidebar */}
           <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
             <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Fees</p>
@@ -293,7 +368,11 @@ function TutorProfilePage() {
 
               <div className="mt-5">
                 {!me && (
-                  <Button asChild className="w-full"><Link to="/auth">Sign in to contact</Link></Button>
+                  <Button asChild className="w-full">
+                    <Link to="/auth" search={{ mode: "signin", redirect: `/tutors/${id}` }}>
+                      Sign in to contact
+                    </Link>
+                  </Button>
                 )}
                 {me && !learner && (
                   <p className="rounded-xl border border-dashed border-border bg-surface p-3 text-xs text-muted-foreground">
@@ -312,7 +391,9 @@ function TutorProfilePage() {
                     <Button className="w-full" onClick={sendRequest} disabled={sending}>
                       <Send className="mr-2 h-4 w-4" /> {sending ? "Sending…" : "Request contact"}
                     </Button>
-                    <p className="text-xs text-muted-foreground">The tutor will be notified. You'll see their email and phone once they accept.</p>
+                    <p className="text-xs text-muted-foreground">
+                      The tutor will be notified. You'll see their email and phone once they accept.
+                    </p>
                   </div>
                 )}
                 {learner && request?.status === "pending" && (
@@ -321,7 +402,9 @@ function TutorProfilePage() {
                       <Hourglass className="h-4 w-4 text-primary" />
                       <span className="font-medium">Request pending — awaiting reply.</span>
                     </div>
-                    <Button variant="outline" size="sm" className="w-full" onClick={withdrawRequest}>Withdraw request</Button>
+                    <Button variant="outline" size="sm" className="w-full" onClick={withdrawRequest}>
+                      Withdraw request
+                    </Button>
                   </div>
                 )}
                 {learner && request?.status === "declined" && (
@@ -329,7 +412,9 @@ function TutorProfilePage() {
                     <div className="flex items-center gap-2 font-medium text-destructive">
                       <XCircle className="h-4 w-4" /> Request was declined.
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">This tutor isn't available right now. Try another tutor.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      This tutor isn't available right now. Try another tutor.
+                    </p>
                   </div>
                 )}
                 {learner && request?.status === "accepted" && (
@@ -337,8 +422,18 @@ function TutorProfilePage() {
                     <div className="flex items-center gap-2 text-primary font-medium">
                       <CheckCircle2 className="h-4 w-4" /> Contact accepted
                     </div>
-                    <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-primary" /> <a className="hover:underline" href={`tel:${contact?.phone}`}>{contact?.phone || "—"}</a></div>
-                    <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-primary" /> <a className="break-all hover:underline" href={`mailto:${contact?.email}`}>{contact?.email || "—"}</a></div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-primary" />{" "}
+                      <a className="hover:underline" href={`tel:${contact?.phone}`}>
+                        {contact?.phone || "—"}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-primary" />{" "}
+                      <a className="break-all hover:underline" href={`mailto:${contact?.email}`}>
+                        {contact?.email || "—"}
+                      </a>
+                    </div>
                   </div>
                 )}
                 <p className="mt-3 text-xs text-muted-foreground">
@@ -349,12 +444,19 @@ function TutorProfilePage() {
           </aside>
         </div>
       </main>
-      <AppFooter />
     </div>
   );
 }
 
-function Section({ title, icon: Icon, children }: { title: string; icon?: any; children: React.ReactNode }) {
+function Section({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon?: any;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-2xl border border-border bg-card p-6 shadow-card">
       <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -378,7 +480,15 @@ function Row({ label, value, icon: Icon }: { label: string; value: React.ReactNo
   );
 }
 
-function ReviewForm({ teacherId, existing, onSaved }: { teacherId: string; existing: any | null; onSaved: (r: any) => void }) {
+function ReviewForm({
+  teacherId,
+  existing,
+  onSaved,
+}: {
+  teacherId: string;
+  existing: any | null;
+  onSaved: (r: any) => void;
+}) {
   const [rating, setRating] = useState(existing?.rating ?? 5);
   const [comment, setComment] = useState(existing?.comment ?? "");
   const [saving, setSaving] = useState(false);
@@ -397,9 +507,11 @@ function ReviewForm({ teacherId, existing, onSaved }: { teacherId: string; exist
       .from("reviews")
       .upsert(
         { teacher_id: teacherId, reviewer_id, rating, comment: comment.trim() },
-        { onConflict: "teacher_id,reviewer_id" }
+        { onConflict: "teacher_id,reviewer_id" },
       )
-      .select("id, rating, comment, created_at, reviewer_id, profiles!reviews_reviewer_id_fkey(full_name)")
+      .select(
+        "id, rating, comment, created_at, reviewer_id, profiles!reviews_reviewer_id_fkey(full_name)",
+      )
       .single();
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -413,7 +525,9 @@ function ReviewForm({ teacherId, existing, onSaved }: { teacherId: string; exist
       <div className="mt-2 flex gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} type="button" onClick={() => setRating(n)} className="p-0.5">
-            <Star className={`h-6 w-6 ${n <= rating ? "fill-primary text-primary" : "text-muted-foreground/40"}`} />
+            <Star
+              className={`h-6 w-6 ${n <= rating ? "fill-primary text-primary" : "text-muted-foreground/40"}`}
+            />
           </button>
         ))}
       </div>

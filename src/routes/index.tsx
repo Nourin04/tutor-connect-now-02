@@ -1,7 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { fetchPrimaryRole, dashboardPathForRole, type AppRole } from "@/lib/auth-helpers";
+import { Brand } from "@/components/site/Brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
   AccordionContent,
@@ -13,38 +16,49 @@ import {
   MapPin,
   Star,
   ShieldCheck,
-  GraduationCap,
-  Users,
   Sparkles,
-  BookOpen,
-  Calculator,
-  FlaskConical,
-  Globe2,
-  Code2,
-  Music2,
   ArrowRight,
-  CheckCircle2,
+  Check,
   MessageCircle,
+  User,
+  Users,
+  BookOpen,
+  GraduationCap,
+  ChevronRight,
+  CheckCircle2,
+  Calculator,
+  Atom,
+  Dna,
+  Code,
+  Clock,
 } from "lucide-react";
-import heroTutor from "@/assets/hero-tutor.jpg";
+import heroTutor from "@/assets/01.png";
 import studentImg from "@/assets/student-1.jpg";
-import tutorImg from "@/assets/tutor-1.jpg";
+import tutorImg from "@/assets/02.png";
 import parentImg from "@/assets/parent-child.jpg";
+import hero3dGroup from "@/assets/hero-3d-group 1.svg";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) {
+      const role = await fetchPrimaryRole();
+      throw redirect({ to: dashboardPathForRole(role) });
+    }
+  },
   head: () => ({
     meta: [
-      { title: "TutorConnect — Find trusted local tutors by subject & location" },
+      { title: "TutorConnect | Find Trusted Local Tutors by Subject & Location" },
       {
         name: "description",
         content:
-          "Discover verified local tutors for any subject, class, or board. Compare ratings, fees, and availability — then connect directly.",
+          "Discover local tutors for any subject, class, or board. Compare ratings, fees, and availability, and connect with them directly.",
       },
-      { property: "og:title", content: "TutorConnect — Find trusted local tutors" },
+      { property: "og:title", content: "TutorConnect | Find Trusted Local Tutors" },
       {
         property: "og:description",
         content:
-          "Discover verified local tutors for any subject, class, or board. Compare ratings, fees, and availability.",
+          "Discover local tutors for any subject, class, or board. Compare ratings, fees, and availability.",
       },
     ],
   }),
@@ -53,15 +67,13 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-[#4665FF]/10 selection:text-[#4665FF]">
       <Header />
       <main>
         <Hero />
-        <TrustBar />
+        <BrowseSubjects />
         <ValueProps />
         <HowItWorks />
-        <PopularSubjects />
-        <FeaturedTutors />
         <ForTeachers />
         <Testimonials />
         <FAQ />
@@ -72,23 +84,27 @@ function Landing() {
   );
 }
 
-/* ---------- Header ---------- */
 function Header() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-lg">
+    <header className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Logo />
-        <nav className="hidden items-center gap-8 md:flex">
-          <a href="#how" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">How it works</a>
-          <a href="#subjects" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Subjects</a>
-          <a href="#tutors" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Tutors</a>
-          <a href="#teachers" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">For teachers</a>
-          <a href="#faq" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
-        </nav>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="hidden sm:inline-flex">Sign in</Button>
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft">
-            Get started
+          <Link
+            to="/auth"
+            search={{ mode: "signin" }}
+            className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
+          >
+            Sign in
+          </Link>
+          <Button
+            size="sm"
+            className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
+            asChild
+          >
+            <Link to="/auth" search={{ mode: "signup" }}>
+              Get started
+            </Link>
           </Button>
         </div>
       </div>
@@ -97,126 +113,147 @@ function Header() {
 }
 
 function Logo() {
-  return (
-    <Link to="/" className="flex items-center gap-2">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-soft">
-        <GraduationCap className="h-5 w-5" />
-      </div>
-      <span className="text-lg font-bold tracking-tight">TutorConnect</span>
-    </Link>
-  );
+  return <Brand className="h-9" />;
 }
 
 /* ---------- Hero ---------- */
 function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 h-[600px] w-[1100px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+    <section className="relative overflow-hidden pt-20 pb-28 lg:pt-32 lg:pb-40 bg-gradient-to-b from-blue-50/50 via-slate-50/30 to-background">
+      {/* Background Decorative Radial Glows */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-1/2 -top-24 h-[600px] w-[1000px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,_rgba(70,101,255,0.12)_0%,_rgba(255,255,255,0)_70%)] blur-3xl" />
+        <div className="absolute right-10 top-1/4 h-[350px] w-[350px] rounded-full bg-blue-200/30 blur-3xl" />
+        <div className="absolute left-10 top-1/3 h-[300px] w-[300px] rounded-full bg-indigo-100/40 blur-3xl" />
       </div>
-      <div className="mx-auto max-w-7xl px-4 pt-16 pb-24 sm:px-6 lg:px-8 lg:pt-24 lg:pb-32">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div className="text-center lg:text-left">
-            <Badge className="bg-primary-soft text-primary border-0 px-3 py-1 rounded-full text-xs font-semibold">
-              <Sparkles className="mr-1 h-3 w-3" /> Trusted by 10,000+ families
-            </Badge>
-            <h1 className="mt-5 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-              Find the right tutor,
-              <br />
-              <span className="text-primary">right around the corner.</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg lg:mx-0">
-              Discover trusted local tutors by subject, class, and location. Compare ratings,
-              fees, and availability — then connect directly. No middlemen.
-            </p>
 
-            <div className="mt-8 rounded-2xl border border-border bg-card p-3 shadow-card lg:max-w-lg">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Subject e.g. Maths, Physics"
-                    className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
-                  />
-                </div>
-                <div className="hidden h-8 w-px bg-border sm:block" />
-                <div className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Your area or city"
-                    className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
-                  />
-                </div>
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl">
-                  Search
-                </Button>
-              </div>
-            </div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+        {/* Centered Headline */}
+        <div className="max-w-4xl mx-auto space-y-10">
+          <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl text-slate-900 leading-[1.12]">
+            Find the right tutor,
+            <br />
+            <span className="relative inline-block text-[#4665FF]">
+              right around the corner.
+              <svg
+                className="absolute -bottom-2 left-0 w-full h-3 text-[#4665FF]/30"
+                viewBox="0 0 100 12"
+                preserveAspectRatio="none"
+                fill="none"
+              >
+                <path
+                  d="M0,8 Q50,0 100,8"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+          </h1>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground lg:justify-start">
-              <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> Free to browse</span>
-              <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> Verified reviews</span>
-              <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> Online & in-person</span>
-            </div>
-          </div>
+          <p
+            style={{ fontSize: "16px" }}
+            className="mx-auto max-w-3xl text-base text-slate-600 font-normal leading-relaxed"
+          >
+            Discover verified local tutors for any subject, class, or board. <br className="hidden sm:inline" />
+            Compare hourly fees, review qualifications, and connect directly with zero middleman costs.
+          </p>
+        </div>
 
-          <div className="relative">
-            <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
-              <img
-                src={heroTutor}
-                alt="A friendly tutor working with a student"
-                width={1280}
-                height={1280}
-                className="h-full w-full object-cover"
-              />
-            </div>
-
-            {/* Floating cards */}
-            <div className="absolute -left-4 top-8 hidden rounded-2xl border border-border bg-card p-3 shadow-card sm:flex sm:items-center sm:gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                <Star className="h-5 w-5 fill-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold leading-none">4.9 / 5</p>
-                <p className="text-xs text-muted-foreground">From 2,400+ reviews</p>
-              </div>
-            </div>
-
-            <div className="absolute -bottom-4 -right-2 hidden rounded-2xl border border-border bg-card p-3 shadow-card sm:block">
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  <img src={studentImg} alt="" width={32} height={32} className="h-8 w-8 rounded-full border-2 border-card object-cover" />
-                  <img src={tutorImg} alt="" width={32} height={32} className="h-8 w-8 rounded-full border-2 border-card object-cover" />
-                  <img src={parentImg} alt="" width={32} height={32} className="h-8 w-8 rounded-full border-2 border-card object-cover" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold leading-none">12K+ tutors</p>
-                  <p className="text-xs text-muted-foreground">across India</p>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Hero Visual Presentation */}
+        <div className="mt-12 sm:mt-16 relative max-w-5xl mx-auto flex justify-center">
+          <img
+            src={hero3dGroup}
+            alt="Diverse group of students and tutors"
+            className="w-full h-auto max-h-[520px] object-contain hover:scale-[1.01] transition-transform duration-500"
+          />
         </div>
       </div>
     </section>
   );
 }
 
-/* ---------- Trust bar ---------- */
-function TrustBar() {
-  const items = ["CBSE", "ICSE", "State Board", "IB", "IGCSE", "NEET", "JEE"];
+/* ---------- Browse by Subject Grid ---------- */
+function BrowseSubjects() {
+  const subjects = [
+    {
+      title: "Mathematics & Statistics",
+      icon: Calculator,
+      count: "1,200+ Tutors",
+      desc: "Algebra, Calculus, Geometry, Statistics for all school levels.",
+    },
+    {
+      title: "Physics & Chemistry",
+      icon: Atom,
+      count: "950+ Tutors",
+      desc: "Conceptual science tuition, lab practicals, and numericals.",
+    },
+    {
+      title: "Biology & Life Sciences",
+      icon: Dna,
+      count: "780+ Tutors",
+      desc: "Botany, Zoology, Genetics, and medical entrance foundations.",
+    },
+    {
+      title: "English & Languages",
+      icon: BookOpen,
+      count: "850+ Tutors",
+      desc: "Grammar, Literature, Spoken English, and competitive prep.",
+    },
+    {
+      title: "Competitive Exam Prep",
+      icon: GraduationCap,
+      count: "1,100+ Tutors",
+      desc: "Specialized coaching for JEE Main, NEET, and Olympiads.",
+    },
+    {
+      title: "Coding & Computer Science",
+      icon: Code,
+      count: "640+ Tutors",
+      desc: "Python, Java, Web Development, and Computer Applications.",
+    },
+  ];
+
   return (
-    <section className="border-y border-border bg-surface">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Boards & exams covered
+    <section className="py-20 bg-slate-50/50 border-y border-slate-200/60">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
+            Find the perfect tutor for every <span className="text-[#4665FF]">subjects.</span>
+          </h2>
+          <p className="mt-2 text-slate-600">
+            Find expert tutors specialized in your exact subject and exam syllabus.
           </p>
-          {items.map((i) => (
-            <span key={i} className="text-sm font-semibold text-foreground/70">
-              {i}
-            </span>
-          ))}
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {subjects.map((sub) => {
+            const Icon = sub.icon;
+            return (
+              <Link
+                key={sub.title}
+                to="/tutors"
+                search={{ query: sub.title.split(" ")[0] }}
+                className="group rounded-3xl border border-slate-200/80 bg-white p-7 shadow-sm hover:border-[#4665FF]/40 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4665FF]/10 text-[#4665FF] transition-transform group-hover:scale-110">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#4665FF] transition-colors">
+                    {sub.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-600 leading-relaxed">{sub.desc}</p>
+                </div>
+                <div className="mt-6 flex items-center gap-1 text-xs font-semibold text-[#4665FF]">
+                  <span>Explore Tutors</span>
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -227,46 +264,44 @@ function TrustBar() {
 function ValueProps() {
   const items = [
     {
-      icon: ShieldCheck,
-      title: "Vetted, reviewed tutors",
-      desc: "Every profile shows real ratings, reviews, and qualifications so you can choose with confidence.",
+      icon: User,
+      title: "Detailed profiles",
+      desc: "Every profile displays qualifications, subject expertise, and experience directly from the tutor so you can choose with confidence.",
     },
     {
       icon: MapPin,
-      title: "Nearby — or online",
+      title: "Nearby or online",
       desc: "Filter by your city, neighborhood, or pick online tutors. Match the format that fits your routine.",
     },
     {
       icon: Sparkles,
       title: "Free to connect",
-      desc: "Browse, message and arrange tuition directly. No platform fees, no middlemen, no hidden costs.",
+      desc: "Browse, message, and arrange tuition directly with zero platform fees or hidden commission costs.",
     },
   ];
   return (
-    <section className="py-20 sm:py-28">
+    <section className="py-20 sm:py-28 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <Badge className="bg-primary-soft text-primary border-0">Why TutorConnect</Badge>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-            Designed for learning that actually <span className="text-primary">sticks</span>.
+        <div className="mx-auto max-w-4xl text-center">
+          <h2 className="font-display mt-4 text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
+            Designed for learning that actually <span className="text-[#4665FF]">sticks.</span>
           </h2>
-          <p className="mt-3 text-muted-foreground">
-            Built around what parents and students told us they needed: clarity, trust, and the
-            right tutor — without the runaround.
+          <p className="mt-3 text-slate-600 max-w-none">
+            Built to help students and parents find trusted tutors with clear information and a simple learning experience.
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="group rounded-2xl border border-border bg-card p-7 transition-all hover:border-primary/30 hover:shadow-soft"
+              className="group rounded-3xl border border-slate-200/80 bg-white p-8 transition-all duration-300 hover:border-[#4665FF]/30 hover:shadow-xl shadow-sm"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft text-primary transition-transform group-hover:scale-110">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4665FF]/10 text-[#4665FF] transition-transform group-hover:scale-110">
                 <Icon className="h-6 w-6" />
               </div>
-              <h3 className="mt-5 text-lg font-semibold">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{desc}</p>
+              <h3 className="mt-6 text-lg font-bold text-slate-900">{title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{desc}</p>
             </div>
           ))}
         </div>
@@ -275,211 +310,97 @@ function ValueProps() {
   );
 }
 
-/* ---------- How it works ---------- */
+/* ---------- How it works (Interactive Mode Toggle) ---------- */
 function HowItWorks() {
-  const steps = [
+  const [activePersona, setActivePersona] = useState<"learner" | "teacher">("learner");
+
+  const learnerSteps = [
     {
       n: "01",
       title: "Tell us what you need",
-      desc: "Subject, class or level, location, and your preferred mode — online, offline, or both.",
+      desc: "Search by subject, class or board, location, and your preferred mode (online or in-person).",
     },
     {
       n: "02",
       title: "Compare local tutors",
-      desc: "Browse profiles with qualifications, fees, availability and reviews from real families.",
+      desc: "Browse rich profiles with qualifications, hourly rates, teaching modes, and ratings.",
     },
     {
       n: "03",
       title: "Connect directly",
-      desc: "Reach out to the tutor straight from their profile and start lessons on your schedule.",
+      desc: "Reach out to your chosen tutor directly with zero platform fees or middleman charges.",
     },
   ];
+
+  const teacherSteps = [
+    {
+      n: "01",
+      title: "Create your free profile",
+      desc: "Sign up in 2 minutes and list your qualifications, subject expertise, and hourly rates.",
+    },
+    {
+      n: "02",
+      title: "Get discovered locally",
+      desc: "Appear in search results when students and parents search in your city or subject.",
+    },
+    {
+      n: "03",
+      title: "Start teaching & earning",
+      desc: "Receive direct contact requests from interested students and set your own terms.",
+    },
+  ];
+
+  const currentSteps = activePersona === "learner" ? learnerSteps : teacherSteps;
+
   return (
-    <section id="how" className="bg-surface py-20 sm:py-28">
+    <section id="how" className="bg-slate-50/50 py-20 sm:py-28 border-y border-slate-200/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-end gap-8 lg:grid-cols-2">
-          <div>
-            <Badge className="bg-primary-soft text-primary border-0">How it works</Badge>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-              From "I need a tutor" to your first lesson — in minutes.
-            </h2>
-          </div>
-          <p className="text-muted-foreground lg:text-right">
-            No accounts to verify, no waiting for callbacks. Find a tutor today, start as soon
-            as tomorrow.
+        <div className="text-center max-w-4xl mx-auto mb-12">
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
+            Start learning in just a few <span className="text-[#4665FF]">steps.</span>
+          </h2>
+          <p className="mt-2 text-slate-600 max-w-none">
+            A seamless journey designed for both students looking for help and tutors seeking students.
           </p>
+
+          {/* Persona Toggle */}
+          <div className="mt-6 inline-flex p-1 rounded-xl bg-slate-200/80 border border-slate-300">
+            <button
+              onClick={() => setActivePersona("learner")}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                activePersona === "learner"
+                  ? "bg-white text-[#4665FF] shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              For Students & Parents
+            </button>
+            <button
+              onClick={() => setActivePersona("teacher")}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                activePersona === "teacher"
+                  ? "bg-white text-[#4665FF] shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              For Tutors
+            </button>
+          </div>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {steps.map((s, i) => (
+        <div className="grid gap-6 md:grid-cols-3">
+          {currentSteps.map((s, i) => (
             <div
               key={s.n}
-              className="relative rounded-2xl border border-border bg-card p-7 shadow-card"
+              className="relative rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm transition-all duration-300 hover:border-[#4665FF]/30 hover:shadow-xl"
             >
-              <span className="text-5xl font-extrabold text-primary/15">{s.n}</span>
-              <h3 className="mt-2 text-lg font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
-              {i < steps.length - 1 && (
-                <ArrowRight className="absolute right-6 top-7 hidden h-5 w-5 text-primary/40 md:block" />
+              <span className="text-5xl font-extrabold text-[#4665FF]/20 font-display">{s.n}</span>
+              <h3 className="mt-3 text-lg font-bold text-slate-900">{s.title}</h3>
+              <p className="mt-2 text-sm text-slate-600 leading-relaxed">{s.desc}</p>
+              {i < currentSteps.length - 1 && (
+                <ArrowRight className="absolute right-6 top-8 hidden h-5 w-5 text-[#4665FF]/30 md:block" />
               )}
             </div>
-          ))}
-        </div>
-
-        <div className="mt-12 grid gap-6 rounded-3xl border border-border bg-card p-6 sm:grid-cols-3 sm:p-10">
-          <Stat value="12K+" label="Active tutors" />
-          <Stat value="200+" label="Subjects & exams" />
-          <Stat value="4.9/5" label="Avg. tutor rating" />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="text-center sm:text-left">
-      <p className="text-4xl font-extrabold tracking-tight text-primary">{value}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-/* ---------- Popular subjects ---------- */
-function PopularSubjects() {
-  const subjects = [
-    { icon: Calculator, name: "Mathematics", count: "1,240 tutors" },
-    { icon: FlaskConical, name: "Science", count: "980 tutors" },
-    { icon: Globe2, name: "Languages", count: "760 tutors" },
-    { icon: Code2, name: "Coding & CS", count: "420 tutors" },
-    { icon: BookOpen, name: "English & Lit", count: "1,100 tutors" },
-    { icon: Music2, name: "Music & Arts", count: "310 tutors" },
-  ];
-  return (
-    <section id="subjects" className="py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <Badge className="bg-primary-soft text-primary border-0">Subjects</Badge>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-              Explore popular <span className="text-primary">subjects</span>
-            </h2>
-          </div>
-          <Button variant="ghost" className="text-primary hover:bg-primary-soft">
-            See all subjects <ArrowRight className="ml-1 h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subjects.map(({ icon: Icon, name, count }) => (
-            <a
-              key={name}
-              href="#"
-              className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-soft"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                <Icon className="h-6 w-6" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold">{name}</p>
-                <p className="text-sm text-muted-foreground">{count}</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground transition-all group-hover:translate-x-1 group-hover:text-primary" />
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ---------- Featured tutors ---------- */
-function FeaturedTutors() {
-  const tutors = [
-    {
-      img: tutorImg,
-      name: "Arjun Mehta",
-      subject: "Physics & Maths • Class 11-12",
-      area: "Koramangala, Bengaluru",
-      rating: 4.9,
-      reviews: 128,
-      fee: "₹800/hr",
-    },
-    {
-      img: studentImg,
-      name: "Priya Iyer",
-      subject: "English & Literature • Class 6-10",
-      area: "Indiranagar, Bengaluru",
-      rating: 4.8,
-      reviews: 96,
-      fee: "₹600/hr",
-    },
-    {
-      img: parentImg,
-      name: "Rohan Verma",
-      subject: "Coding & Computer Science",
-      area: "Online",
-      rating: 5.0,
-      reviews: 72,
-      fee: "₹1,000/hr",
-    },
-  ];
-  return (
-    <section id="tutors" className="bg-surface py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <Badge className="bg-primary-soft text-primary border-0">Featured tutors</Badge>
-            <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-              Meet a few of our <span className="text-primary">top-rated</span> tutors
-            </h2>
-          </div>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            Browse all tutors
-          </Button>
-        </div>
-
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {tutors.map((t) => (
-            <article
-              key={t.name}
-              className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all hover:-translate-y-1 hover:shadow-soft"
-            >
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={t.img}
-                  alt={t.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute right-3 top-3 rounded-full bg-card/95 px-3 py-1 text-xs font-semibold shadow-card backdrop-blur">
-                  {t.fee}
-                </div>
-              </div>
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold">{t.name}</h3>
-                    <p className="mt-0.5 text-sm text-muted-foreground">{t.subject}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1 text-sm font-semibold">
-                    <Star className="h-4 w-4 fill-primary text-primary" />
-                    {t.rating}
-                    <span className="font-normal text-muted-foreground">({t.reviews})</span>
-                  </div>
-                </div>
-                <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {t.area}
-                </div>
-                <Button
-                  variant="outline"
-                  className="mt-5 w-full border-primary/30 text-primary hover:bg-primary-soft hover:text-primary"
-                >
-                  View profile
-                </Button>
-              </div>
-            </article>
           ))}
         </div>
       </div>
@@ -489,68 +410,102 @@ function FeaturedTutors() {
 
 /* ---------- For teachers ---------- */
 function ForTeachers() {
-  const benefits = [
-    "Create a rich profile in minutes — no approvals, no fees",
-    "Reach families actively searching in your area",
-    "Showcase qualifications, ratings, and availability",
-    "Manage everything from one simple dashboard",
+  const bentoFeatures = [
+    {
+      title: "No Platform Fees",
+      desc: "Zero approvals, zero listing fees, and 0% commission on your earnings.",
+      icon: Sparkles,
+    },
+    {
+      title: "Direct Local Leads",
+      desc: "Reach families actively searching for tutors in your city and neighborhood.",
+      icon: Users,
+    },
+    {
+      title: "Flexible Teaching",
+      desc: "Set your own hourly rates, choose subject specializations, and schedule sessions.",
+      icon: GraduationCap,
+    },
+    {
+      title: "Verified Credentials",
+      desc: "Build instant trust by showcasing your qualifications, experience, and background.",
+      icon: ShieldCheck,
+    },
+    {
+      title: "Direct Communication",
+      desc: "Chat directly with interested parents and students without middleman delays.",
+      icon: MessageCircle,
+    },
+    {
+      title: "Full Schedule Control",
+      desc: "Accept students according to your availability, routine, and preferred teaching mode.",
+      icon: Clock,
+    },
   ];
+
   return (
-    <section id="teachers" className="py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-[oklch(0.45_0.22_270)] text-primary-foreground">
-          <div className="grid items-center gap-10 p-8 sm:p-12 lg:grid-cols-2 lg:p-16">
-            <div>
-              <Badge className="border-0 bg-white/15 text-white backdrop-blur">
-                For teachers & tutors
-              </Badge>
-              <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-                Grow your tuition practice — without the noise.
-              </h2>
-              <p className="mt-3 text-base text-white/85">
-                Join thousands of independent tutors who use TutorConnect to find local students,
-                fill their schedule, and build a reputation that lasts.
-              </p>
-              <ul className="mt-6 space-y-3">
-                {benefits.map((b) => (
-                  <li key={b} className="flex items-start gap-3 text-sm text-white/90">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-white" />
-                    {b}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button className="bg-white text-primary hover:bg-white/90">
-                  Become a tutor
-                </Button>
+    <section id="teachers" className="py-20 sm:py-28 bg-slate-50/50 border-y border-slate-200/60">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+        {/* Centered Header */}
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl text-slate-900 leading-[1.15] whitespace-nowrap">
+            Connect with students looking for the right <span className="text-[#4665FF]">tutor.</span>
+          </h2>
+          <p
+            style={{ fontSize: "16px" }}
+            className="mt-4 text-base text-slate-600 leading-relaxed max-w-none mx-auto whitespace-nowrap"
+          >
+            Reach more students, build your reputation, and spend more time doing what you love.
+          </p>
+        </div>
+
+        {/* Blue Hero Card Container with Image */}
+        <div className="mt-14 overflow-hidden rounded-3xl bg-gradient-to-br from-[#4665FF] via-indigo-600 to-[#2A43D3] text-white shadow-2xl p-8 sm:p-12 lg:p-14 text-left">
+          <div className="grid items-center gap-10 lg:grid-cols-12">
+            {/* Left Column: 6 Features Grid & Button */}
+            <div className="lg:col-span-7 space-y-8">
+              <div className="grid gap-6 sm:grid-cols-2">
+                {bentoFeatures.map((feat) => {
+                  const Icon = feat.icon;
+                  return (
+                    <div key={feat.title} className="group">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 text-white border border-white/20 mb-3 transition-transform group-hover:scale-110">
+                        <Icon className="h-5.5 w-5.5" />
+                      </div>
+                      <h3 className="text-base font-bold text-white">
+                        {feat.title}
+                      </h3>
+                      <p className="mt-1.5 text-xs sm:text-sm text-blue-100/90 leading-relaxed">
+                        {feat.desc}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="pt-2">
                 <Button
-                  variant="outline"
-                  className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                  size="lg"
+                  className="bg-white text-[#4665FF] hover:bg-white/90 rounded-md font-semibold px-8 h-12 shadow-lg"
+                  asChild
                 >
-                  Learn more
+                  <Link to="/auth" search={{ mode: "signup", role: "teacher" }}>
+                    Become a tutor
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             </div>
 
-            <div className="relative">
-              <div className="overflow-hidden rounded-2xl border border-white/20 shadow-2xl">
+            {/* Right Column: High Quality Image Frame */}
+            <div className="lg:col-span-5 relative">
+              <div className="overflow-hidden rounded-2xl border border-white/20 shadow-2xl max-h-[460px]">
                 <img
                   src={tutorImg}
                   alt="Independent tutor on TutorConnect"
                   loading="lazy"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover object-center hover:scale-105 transition-transform duration-500"
                 />
-              </div>
-              <div className="absolute -left-4 bottom-6 hidden rounded-2xl bg-card p-4 text-foreground shadow-soft sm:block">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">+24 inquiries</p>
-                    <p className="text-xs text-muted-foreground">this month</p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -572,7 +527,7 @@ function Testimonials() {
     },
     {
       quote:
-        "I'm a first-year college student and got a great Physics tutor nearby — affordable, patient, and explains everything clearly.",
+        "I'm a first-year college student and found a great Physics tutor nearby. They are affordable, patient, and explain everything clearly.",
       name: "Karan D.",
       role: "Student, Pune",
       img: studentImg,
@@ -585,28 +540,31 @@ function Testimonials() {
       img: tutorImg,
     },
   ];
+
   return (
-    <section className="bg-surface py-20 sm:py-28">
+    <section className="bg-slate-50/50 py-20 sm:py-28 border-t border-slate-200/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <Badge className="bg-primary-soft text-primary border-0">Stories</Badge>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-            Loved by families and tutors <span className="text-primary">across India</span>
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
+            Real stories from our <span className="text-[#4665FF]">community.</span>
           </h2>
+          <p className="mt-3 text-slate-600">
+            From finding the right tutor to achieving learning goals, here's what our users have to say.
+          </p>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
           {reviews.map((r) => (
             <figure
               key={r.name}
-              className="flex h-full flex-col rounded-2xl border border-border bg-card p-7 shadow-card"
+              className="flex h-full flex-col rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm transition-all duration-300 hover:shadow-xl"
             >
-              <div className="flex gap-0.5 text-primary">
+              <div className="flex gap-1 text-amber-400">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-primary" />
+                  <Star key={i} className="h-4 w-4 fill-amber-400" />
                 ))}
               </div>
-              <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-foreground/85">
+              <blockquote className="mt-5 flex-1 text-sm leading-relaxed text-slate-700">
                 "{r.quote}"
               </blockquote>
               <figcaption className="mt-6 flex items-center gap-3">
@@ -616,11 +574,11 @@ function Testimonials() {
                   width={40}
                   height={40}
                   loading="lazy"
-                  className="h-10 w-10 rounded-full object-cover"
+                  className="h-10 w-10 rounded-full object-cover border border-slate-200"
                 />
                 <div>
-                  <p className="text-sm font-semibold">{r.name}</p>
-                  <p className="text-xs text-muted-foreground">{r.role}</p>
+                  <p className="text-sm font-bold text-slate-900">{r.name}</p>
+                  <p className="text-xs text-slate-500">{r.role}</p>
                 </div>
               </figcaption>
             </figure>
@@ -636,15 +594,15 @@ function FAQ() {
   const faqs = [
     {
       q: "Is TutorConnect free to use?",
-      a: "Yes — browsing tutors, viewing profiles, and contacting them is completely free for parents and students. Tutors can also list their profiles at no cost during our MVP.",
+      a: "Yes. Browsing tutors, viewing profiles, and contacting them is completely free for parents and students. Tutors can also list their profiles at no cost.",
     },
     {
-      q: "How do I know the tutors are trustworthy?",
-      a: "Every tutor profile shows qualifications, experience, and verified reviews from real families. You can filter by rating, see past student feedback, and reach out only when you're confident.",
+      q: "How do I evaluate a tutor?",
+      a: "Every tutor profile displays detailed qualifications, educational background, years of teaching experience, fee structures, and specialized subjects so you can make an informed decision.",
     },
     {
       q: "Do you support online and in-person tutoring?",
-      a: "Both. Filter by mode of teaching — online, offline, or both — and find a tutor that fits the way you (or your child) learn best.",
+      a: "Both. Filter by mode of teaching (online, offline, or both) and find a tutor that fits the way you or your child learns best.",
     },
     {
       q: "Can I cover specific boards like CBSE, ICSE or State?",
@@ -652,33 +610,33 @@ function FAQ() {
     },
     {
       q: "How do I pay the tutor?",
-      a: "Payments happen directly between you and the tutor at the rate listed on their profile. TutorConnect doesn't charge any fees or commissions in the current phase.",
+      a: "Payments happen directly between you and the tutor at the rate listed on their profile. TutorConnect doesn't charge any fees or commissions.",
     },
   ];
+
   return (
-    <section id="faq" className="py-20 sm:py-28">
+    <section id="faq" className="py-20 sm:py-28 bg-background">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <Badge className="bg-primary-soft text-primary border-0">FAQ</Badge>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-            Common questions
+          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl text-slate-900">
+            Your questions, <span className="text-[#4665FF]">answered.</span>
           </h2>
-          <p className="mt-3 text-muted-foreground">
+          <p className="mt-3 text-slate-600">
             Everything you need to know before getting started.
           </p>
         </div>
 
-        <Accordion type="single" collapsible className="mt-10 space-y-3">
+        <Accordion type="single" collapsible className="mt-12 space-y-4">
           {faqs.map((f, i) => (
             <AccordionItem
               key={i}
               value={`item-${i}`}
-              className="rounded-2xl border border-border bg-card px-5 shadow-card"
+              className="rounded-2xl border border-slate-200/80 bg-white px-6 shadow-sm overflow-hidden"
             >
-              <AccordionTrigger className="text-left text-base font-semibold hover:no-underline">
+              <AccordionTrigger className="text-left text-base font-bold text-slate-900 hover:no-underline py-5">
                 {f.q}
               </AccordionTrigger>
-              <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+              <AccordionContent className="text-sm leading-relaxed text-slate-600 pb-5">
                 {f.a}
               </AccordionContent>
             </AccordionItem>
@@ -692,31 +650,40 @@ function FAQ() {
 /* ---------- CTA ---------- */
 function CTASection() {
   return (
-    <section className="px-4 pb-20 sm:px-6 lg:px-8">
+    <section className="px-4 pb-20 sm:px-6 lg:px-8 bg-background">
       <div className="mx-auto max-w-7xl">
-        <div className="relative overflow-hidden rounded-3xl bg-foreground px-8 py-14 text-center text-background sm:px-12 sm:py-20">
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 px-8 py-16 text-center text-white sm:px-16 sm:py-24 shadow-2xl">
           <div className="absolute inset-0 -z-10 opacity-30">
-            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-primary blur-3xl" />
-            <div className="absolute -left-20 -bottom-20 h-72 w-72 rounded-full bg-primary blur-3xl" />
+            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-[#4665FF] blur-3xl" />
+            <div className="absolute -left-20 -bottom-20 h-72 w-72 rounded-full bg-[#4665FF] blur-3xl" />
           </div>
-          <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight sm:text-4xl">
+          <h2 className="font-display mx-auto max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl text-white">
             Start learning with a tutor who actually fits you.
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-base text-background/70">
-            Join thousands of parents and students using TutorConnect to find the right teacher,
-            in their area, at the right price.
+          <p className="mx-auto mt-4 max-w-xl text-base text-slate-300 font-normal">
+            Join thousands of parents and students using TutorConnect to find the right teacher, in
+            their area, at the right price.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              Find a tutor
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
+            <Button
+              size="lg"
+              className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-md"
+              asChild
+            >
+              <Link to="/auth" search={{ mode: "signup" }}>
+                Find a tutor
+              </Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="border-background/30 bg-transparent text-background hover:bg-background/10 hover:text-background"
+              className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white rounded-md font-semibold"
+              asChild
             >
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Become a tutor
+              <Link to="/auth" search={{ mode: "signup", role: "teacher" }}>
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Become a tutor
+              </Link>
             </Button>
           </div>
         </div>
@@ -728,21 +695,35 @@ function CTASection() {
 /* ---------- Footer ---------- */
 function Footer() {
   return (
-    <footer className="border-t border-border bg-surface">
+    <footer className="border-t border-slate-200/60 bg-slate-50/50">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-4">
+        <div className="flex flex-col justify-between gap-10 md:flex-row">
           <div>
             <Logo />
-            <p className="mt-4 max-w-xs text-sm text-muted-foreground">
-              Helping families and independent tutors connect — locally, transparently, and
-              without the middlemen.
+            <p className="mt-4 max-w-xs text-sm text-slate-500 leading-relaxed">
+              Helping families and independent tutors connect locally, transparently, and directly.
             </p>
           </div>
-          <FooterCol title="Product" links={["How it works", "For students", "For parents", "For tutors"]} />
-          <FooterCol title="Company" links={["About", "Blog", "Contact", "Careers"]} />
-          <FooterCol title="Legal" links={["Privacy Policy", "Terms of Service", "Code of Conduct"]} />
+          <div className="flex gap-24 sm:gap-36 md:gap-48">
+            <FooterCol
+              title="Product"
+              links={[
+                { label: "How it works", href: "#how" },
+                { label: "FAQ", href: "#faq" },
+                { label: "About", href: "#" },
+                { label: "Contact", href: "#" },
+              ]}
+            />
+            <FooterCol
+              title="Legal"
+              links={[
+                { label: "Privacy Policy", href: "/privacy" },
+                { label: "Terms of Service", href: "/terms" },
+              ]}
+            />
+          </div>
         </div>
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-slate-200/60 pt-6 text-xs text-slate-500 sm:flex-row">
           <p>© {new Date().getFullYear()} TutorConnect. All rights reserved.</p>
           <p>Made for learners, everywhere.</p>
         </div>
@@ -751,15 +732,18 @@ function Footer() {
   );
 }
 
-function FooterCol({ title, links }: { title: string; links: string[] }) {
+function FooterCol({ title, links }: { title: string; links: { label: string; href: string }[] }) {
   return (
     <div>
-      <h4 className="text-sm font-semibold">{title}</h4>
+      <h4 className="text-sm font-bold text-slate-900">{title}</h4>
       <ul className="mt-4 space-y-2.5">
-        {links.map((l) => (
-          <li key={l}>
-            <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-primary">
-              {l}
+        {links.map((link) => (
+          <li key={link.label}>
+            <a
+              href={link.href}
+              className="text-sm text-slate-500 transition-colors hover:text-[#4665FF]"
+            >
+              {link.label}
             </a>
           </li>
         ))}

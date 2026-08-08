@@ -1,148 +1,329 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import studentIconUrl from "@/assets/Student Registration [Vectorized].svg";
+import teacherIconUrl from "@/assets/Training [Vectorized].svg";
+import parentIconUrl from "@/assets/Guardian [Vectorized].svg";
+import authIllustration from "@/assets/auth-illustration 1.svg";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Brand } from "@/components/site/Brand";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  fetchPrimaryRole,
-  onboardingPathForRole,
-  dashboardPathForRole,
-} from "@/lib/auth-helpers";
-import { GraduationCap, User, Users } from "lucide-react";
+import { fetchPrimaryRole, onboardingPathForRole, dashboardPathForRole } from "@/lib/auth-helpers";
+import { Eye, EyeOff, User } from "lucide-react";
 
 const searchSchema = z.object({
   mode: fallback(z.enum(["signin", "signup"]), "signin").default("signin"),
   role: fallback(z.enum(["student", "parent", "teacher"]), "student").default("student"),
+  redirect: z.string().optional(),
 });
 
 export const Route = createFileRoute("/auth")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
-      { title: "Sign in or sign up — TutorConnect" },
-      { name: "description", content: "Create your TutorConnect account as a student, parent, or teacher." },
+      { title: "Sign In / Sign Up | TutorConnect" },
+      {
+        name: "description",
+        content: "Create your TutorConnect account as a student, parent, or teacher.",
+      },
     ],
   }),
   component: AuthPage,
 });
 
-const ROLES = [
-  { value: "student", label: "Student", icon: User, desc: "I'm looking for a tutor for myself" },
-  { value: "parent", label: "Parent", icon: Users, desc: "I'm looking for a tutor for my child" },
-  { value: "teacher", label: "Teacher", icon: GraduationCap, desc: "I want to offer tutoring" },
-] as const;
-
 function AuthPage() {
-  const { mode, role: initialRole } = Route.useSearch();
+  const { mode, redirect } = Route.useSearch();
   const navigate = useNavigate();
+  const [isMounted, setIsMounted] = useState(false);
   const [tab, setTab] = useState<"signin" | "signup">(mode);
+  const [step, setStep] = useState<"form" | "choose-role">("form");
+  const [savedFormData, setSavedFormData] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Sync tab state with mode search param
+  useEffect(() => {
+    setTab(mode);
+    setStep("form"); // Reset step when switching mode
+  }, [mode]);
 
   // Redirect if already signed in
   useEffect(() => {
+    if (!isMounted) return;
     supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
-        const role = await fetchPrimaryRole();
-        navigate({ to: dashboardPathForRole(role), replace: true });
+        if (redirect) {
+          navigate({ to: redirect, replace: true });
+        } else {
+          const role = await fetchPrimaryRole();
+          navigate({ to: dashboardPathForRole(role), replace: true });
+        }
       }
     });
-  }, [navigate]);
+  }, [isMounted, navigate, redirect]);
+
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-muted-foreground">Loading auth...</div>
+      </div>
+    );
+  }
+
+  const isChooseRole = tab === "signup" && step === "choose-role";
 
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex h-16 max-w-7xl items-center px-4 sm:px-6 lg:px-8">
-          <Brand />
+    <div className="min-h-screen w-full flex bg-white transition-colors duration-300 relative">
+      {authLoading && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4665FF]"></div>
+          <p className="mt-4 text-sm font-semibold text-[#1A1A1A]">Redirecting...</p>
         </div>
-      </header>
-      <main className="mx-auto flex max-w-md flex-col px-4 py-12 sm:px-6">
-        <h1 className="text-3xl font-bold tracking-tight">Welcome to TutorConnect</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Find the right tutor — or start tutoring — in minutes.
-        </p>
+      )}
+      {/* Left side: Brand blue background with custom 3D illustration — hidden on role selection screen */}
+      {!isChooseRole && (
+        <div className="hidden md:flex md:w-[45%] bg-[#4665FF] shrink-0 items-center justify-center p-8 lg:p-12 relative overflow-hidden">
+          <img
+            src={authIllustration}
+            alt="TutorConnect Learning Illustration"
+            className="w-full max-w-[520px] object-contain drop-shadow-xl select-none"
+          />
+        </div>
+      )}
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")} className="mt-8">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign in</TabsTrigger>
-            <TabsTrigger value="signup">Create account</TabsTrigger>
-          </TabsList>
-          <TabsContent value="signin" className="mt-6">
-            <SignInForm />
-          </TabsContent>
-          <TabsContent value="signup" className="mt-6">
-            <SignUpForm initialRole={initialRole} />
-          </TabsContent>
-        </Tabs>
-
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          By continuing you agree to our{" "}
-          <Link to="/terms" className="underline hover:text-primary">Terms</Link> and{" "}
-          <Link to="/privacy" className="underline hover:text-primary">Privacy Policy</Link>.
-        </p>
-      </main>
+      {/* Right side / Full-width on role selection: Center-aligned Auth Form */}
+      <div
+        className={`flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 ${isChooseRole ? "w-full" : "md:w-[55%]"}`}
+      >
+        <div className={`w-full mx-auto ${isChooseRole ? "max-w-[750px]" : "max-w-[400px]"}`}>
+          {tab === "signin" ? (
+            <SignInForm setTab={setTab} setAuthLoading={setAuthLoading} redirect={redirect} />
+          ) : step === "choose-role" ? (
+            <RoleSelectionScreen
+              formData={savedFormData}
+              setStep={setStep}
+              setTab={setTab}
+              setAuthLoading={setAuthLoading}
+              redirect={redirect}
+            />
+          ) : (
+            <SignUpForm setTab={setTab} setStep={setStep} setSavedFormData={setSavedFormData} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-function SignInForm() {
+function SignInForm({
+  setTab,
+  setAuthLoading,
+  redirect,
+}: {
+  setTab: (t: "signin" | "signup") => void;
+  setAuthLoading: (l: boolean) => void;
+  redirect?: string;
+}) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setLoading(false);
+      setErrorMsg(error.message);
+      return;
+    }
+    setAuthLoading(true);
+    toast.success("Welcome back!");
+    if (redirect) {
+      navigate({ to: redirect, replace: true });
+    } else {
+      const role = await fetchPrimaryRole();
+      navigate({ to: dashboardPathForRole(role), replace: true });
+    }
+  }
+
+  async function handleForgotPassword(e: React.MouseEvent) {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email address first.");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?mode=reset-password`,
+    });
     setLoading(false);
     if (error) {
       toast.error(error.message);
-      return;
+    } else {
+      toast.success("Password reset email sent! Please check your inbox.");
     }
-    toast.success("Welcome back!");
-    const role = await fetchPrimaryRole();
-    navigate({ to: dashboardPathForRole(role), replace: true });
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-card">
-      <div className="space-y-1.5">
-        <Label htmlFor="si-email">Email</Label>
-        <Input id="si-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+    <div className="w-full space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold tracking-tight text-[#1A1A1A] font-display">Sign in</h2>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="si-password">Password</Label>
-        <Input id="si-password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="si-email" className="text-sm font-semibold text-[#1A1A1A]">
+            Email address <span className="text-rose-500">*</span>
+          </Label>
+          <Input
+            id="si-email"
+            type="email"
+            placeholder="you@company.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
+          />
+        </div>
+
+        <div className="space-y-1.5 text-left">
+          <Label htmlFor="si-password" className="text-sm font-semibold text-[#1A1A1A]">
+            Password <span className="text-rose-500">*</span>
+          </Label>
+          <div className="relative flex items-center">
+            <Input
+              id="si-password"
+              type={showPassword ? "text" : "password"}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="w-full h-10 pl-4 pr-12 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errorMsg && (
+            <p className="text-xs text-destructive mt-1.5 font-medium text-left">{errorMsg}</p>
+          )}
+        </div>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full h-10 rounded-md bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm !mt-6"
+        >
+          {loading ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+
+      <div className="text-center">
+        <a
+          href="#"
+          onClick={handleForgotPassword}
+          className="text-sm font-medium text-[#4665FF] hover:underline transition-colors"
+        >
+          Forgot your password?
+        </a>
       </div>
-      <Button type="submit" disabled={loading} className="w-full">
-        {loading ? "Signing in…" : "Sign in"}
+
+      <div className="relative flex py-2 items-center">
+        <div className="flex-grow border-t border-[#E2E8F0]"></div>
+        <span className="flex-shrink mx-4 text-xs text-muted-foreground bg-white">or</span>
+        <div className="flex-grow border-t border-[#E2E8F0]"></div>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => {
+          setTab("signup");
+          navigate({
+            to: "/auth",
+            search: (prev: any) => ({ ...prev, mode: "signup" }),
+            replace: true,
+          });
+        }}
+        disabled={loading}
+        className="w-full h-10 rounded-md border border-[#E2E8F0] bg-white hover:bg-slate-50 text-[#1A1A1A] font-medium flex items-center justify-center gap-2.5 transition-all shadow-sm"
+      >
+        Create an account
       </Button>
-    </form>
+    </div>
   );
 }
 
 const signupSchema = z
   .object({
-    fullName: z.string().trim().min(2, "Enter your full name").max(80),
-    email: z.string().trim().email("Invalid email").max(255),
-    phone: z.string().trim().min(7, "Enter a valid phone number").max(20),
-    password: z.string().min(8, "At least 8 characters").max(72),
+    fullName: z
+      .string()
+      .trim()
+      .min(2, "Name must be at least 2 characters")
+      .max(80, "Name must be at most 80 characters")
+      .regex(/^[a-zA-Z\s'-]+$/, "Name can only contain letters, hyphens, apostrophes, and spaces"),
+    email: z
+      .string()
+      .trim()
+      .email("Invalid email address")
+      .max(255, "Email must be at most 255 characters"),
+    phone: z
+      .string()
+      .trim()
+      .refine(
+        (val) => val === "" || /^\+?[0-9\s-()]{7,20}$/.test(val),
+        "Enter a valid phone number (7 to 20 digits, spaces, hyphens, parentheses, optional +)",
+      ),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .max(72, "Password must be at most 72 characters")
+      .regex(/[0-9]/, "Password must contain at least one number")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[^a-zA-Z0-9]/, "Password must contain at least one special character"),
     confirm: z.string(),
     role: z.enum(["student", "parent", "teacher"]),
   })
   .refine((d) => d.password === d.confirm, { path: ["confirm"], message: "Passwords don't match" });
 
-function SignUpForm({ initialRole }: { initialRole: "student" | "parent" | "teacher" }) {
+function SignUpForm({
+  setTab,
+  setStep,
+  setSavedFormData,
+}: {
+  setTab: (t: "signin" | "signup") => void;
+  setStep: (s: "form" | "choose-role") => void;
+  setSavedFormData: (d: any) => void;
+}) {
   const navigate = useNavigate();
-  const [role, setRole] = useState<"student" | "parent" | "teacher">(initialRole);
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirm: "" });
-  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirm: "",
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   function setField<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((p) => ({ ...p, [k]: v }));
@@ -150,7 +331,7 @@ function SignUpForm({ initialRole }: { initialRole: "student" | "parent" | "teac
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const parsed = signupSchema.safeParse({ ...form, role });
+    const parsed = signupSchema.safeParse({ ...form, role: "student" });
     if (!parsed.success) {
       const fieldErrors: Record<string, string> = {};
       parsed.error.issues.forEach((i) => {
@@ -160,95 +341,297 @@ function SignUpForm({ initialRole }: { initialRole: "student" | "parent" | "teac
       return;
     }
     setErrors({});
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: {
-          full_name: parsed.data.fullName,
-          phone: parsed.data.phone,
-          role: parsed.data.role,
-        },
-      },
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Account created!");
-    navigate({ to: onboardingPathForRole(role), replace: true });
+    setSavedFormData(form);
+    setStep("choose-role");
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5 rounded-2xl border border-border bg-card p-6 shadow-card">
-      <div>
-        <Label className="text-sm">I am a…</Label>
-        <div className="mt-2 grid gap-2 sm:grid-cols-3">
-          {ROLES.map((r) => {
-            const active = role === r.value;
-            const Icon = r.icon;
-            return (
-              <button
-                type="button"
-                key={r.value}
-                onClick={() => setRole(r.value)}
-                className={`flex flex-col items-start rounded-xl border p-3 text-left transition-all ${
-                  active
-                    ? "border-primary bg-primary-soft ring-2 ring-primary/30"
-                    : "border-border bg-background hover:border-primary/40"
-                }`}
-              >
-                <Icon className={`h-5 w-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
-                <span className="mt-1.5 text-sm font-semibold">{r.label}</span>
-                <span className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{r.desc}</span>
-              </button>
-            );
-          })}
-        </div>
+    <div className="w-full space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold tracking-tight text-[#1A1A1A] font-display">
+          Create your account
+        </h2>
       </div>
 
-      <Field label="Full name" id="su-name" error={errors.fullName}>
-        <Input id="su-name" value={form.fullName} onChange={(e) => setField("fullName", e.target.value)} required />
-      </Field>
-      <Field label="Email" id="su-email" error={errors.email}>
-        <Input id="su-email" type="email" value={form.email} onChange={(e) => setField("email", e.target.value)} required autoComplete="email" />
-      </Field>
-      <Field label="Mobile number" id="su-phone" error={errors.phone}>
-        <Input id="su-phone" type="tel" value={form.phone} onChange={(e) => setField("phone", e.target.value)} required />
-      </Field>
-      <Field label="Password" id="su-pw" error={errors.password}>
-        <Input id="su-pw" type="password" value={form.password} onChange={(e) => setField("password", e.target.value)} required autoComplete="new-password" />
-      </Field>
-      <Field label="Confirm password" id="su-pw2" error={errors.confirm}>
-        <Input id="su-pw2" type="password" value={form.confirm} onChange={(e) => setField("confirm", e.target.value)} required autoComplete="new-password" />
-      </Field>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="space-y-1.5 text-left">
+          <Label htmlFor="su-name" className="text-sm font-semibold text-[#1A1A1A]">
+            Name <span className="text-rose-500">*</span>
+          </Label>
+          <Input
+            id="su-name"
+            value={form.fullName}
+            onChange={(e) => setField("fullName", e.target.value)}
+            required
+            maxLength={80}
+            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
+          />
+          {errors.fullName && <p className="text-xs text-destructive mt-1">{errors.fullName}</p>}
+        </div>
 
-      <Button type="submit" disabled={loading} className="w-full">
-        {loading ? "Creating…" : "Create account"}
+        <div className="space-y-1.5 text-left">
+          <Label htmlFor="su-email" className="text-sm font-semibold text-[#1A1A1A]">
+            Email address <span className="text-rose-500">*</span>
+          </Label>
+          <Input
+            id="su-email"
+            type="email"
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={(e) => setField("email", e.target.value)}
+            required
+            maxLength={255}
+            autoComplete="email"
+            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
+          />
+          {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
+        </div>
+
+        <div className="space-y-1.5 text-left">
+          <Label htmlFor="su-phone" className="text-sm font-semibold text-[#1A1A1A]">
+            Phone Number
+          </Label>
+          <Input
+            id="su-phone"
+            type="tel"
+            placeholder="+91 9876543210"
+            value={form.phone}
+            onChange={(e) => setField("phone", e.target.value)}
+            maxLength={20}
+            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
+          />
+          {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
+        </div>
+        <div className="space-y-1.5 text-left">
+          <Label htmlFor="su-pw" className="text-sm font-semibold text-[#1A1A1A]">
+            Password <span className="text-rose-500">*</span>
+          </Label>
+          <div className="relative flex items-center">
+            <Input
+              id="su-pw"
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={(e) => setField("password", e.target.value)}
+              required
+              maxLength={72}
+              autoComplete="new-password"
+              className="w-full h-10 pl-4 pr-12 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/40"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
+        </div>
+
+        <div className="space-y-1.5 text-left">
+          <Label htmlFor="su-pw2" className="text-sm font-semibold text-[#1A1A1A]">
+            Confirm password <span className="text-rose-500">*</span>
+          </Label>
+          <div className="relative flex items-center">
+            <Input
+              id="su-pw2"
+              type={showConfirmPassword ? "text" : "password"}
+              value={form.confirm}
+              onChange={(e) => setField("confirm", e.target.value)}
+              required
+              maxLength={72}
+              autoComplete="new-password"
+              className="w-full h-10 pl-4 pr-12 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/40"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-4 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errors.confirm && <p className="text-xs text-destructive mt-1">{errors.confirm}</p>}
+        </div>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full h-10 rounded-md bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm !mt-6"
+        >
+          {loading ? "Creating account…" : "Create account"}
+        </Button>
+      </form>
+
+      <div className="relative flex py-2 items-center">
+        <div className="flex-grow border-t border-[#E2E8F0]"></div>
+        <span className="flex-shrink mx-4 text-xs text-muted-foreground bg-white">or</span>
+        <div className="flex-grow border-t border-[#E2E8F0]"></div>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => {
+          setTab("signin");
+          navigate({
+            to: "/auth",
+            search: (prev: any) => ({ ...prev, mode: "signin" }),
+            replace: true,
+          });
+        }}
+        disabled={loading}
+        className="w-full h-10 rounded-md border border-[#E2E8F0] bg-white hover:bg-slate-50 text-[#1A1A1A] font-medium flex items-center justify-center gap-2.5 transition-all shadow-sm"
+      >
+        Sign in
       </Button>
-    </form>
+    </div>
   );
 }
 
-function Field({
-  label,
-  id,
-  error,
-  children,
+function RoleSelectionScreen({
+  formData,
+  setStep,
+  setTab,
+  setAuthLoading,
+  redirect,
 }: {
-  label: string;
-  id: string;
-  error?: string;
-  children: React.ReactNode;
+  formData: any;
+  setStep: (s: "form" | "choose-role") => void;
+  setTab: (t: "signin" | "signup") => void;
+  setAuthLoading: (l: boolean) => void;
+  redirect?: string;
 }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState<string | null>(null);
+
+  async function handleRoleSelect(role: "student" | "parent" | "teacher") {
+    if (!formData) {
+      toast.error("Form data is missing. Please go back and fill the form again.");
+      return;
+    }
+    try {
+      setLoading(role);
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email.trim(),
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            full_name: formData.fullName.trim(),
+            phone: formData.phone?.trim() || null,
+            role: role,
+          },
+        },
+      });
+      if (error) {
+        setLoading(null);
+        toast.error(error.message);
+        return;
+      }
+      if (data.session) {
+        setAuthLoading(true);
+        toast.success("Account created and signed in!");
+        if (redirect) {
+          navigate({ to: redirect, replace: true });
+        } else {
+          navigate({ to: onboardingPathForRole(role), replace: true });
+        }
+      } else {
+        setLoading(null);
+        toast.success("Account created! Please check your email to confirm and log in.", {
+          duration: 8000,
+        });
+        setTab("signin");
+        navigate({
+          to: "/auth",
+          search: (prev: any) => ({ ...prev, mode: "signin", redirect }),
+          replace: true,
+        });
+      }
+    } catch (err: any) {
+      setLoading(null);
+      toast.error(err.message || "An unexpected error occurred during signup.");
+    }
+  }
+
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+    <div className="w-full space-y-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold tracking-tight text-[#1A1A1A] font-display">
+          Please choose your role
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {/* Student Card */}
+        <button
+          type="button"
+          disabled={loading !== null}
+          onClick={() => handleRoleSelect("student")}
+          className="w-full aspect-square flex flex-col items-center justify-center border-2 border-border hover:border-primary/50 hover:bg-primary-soft/10 rounded-xl p-6 text-center transition-all duration-300 bg-card group hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:pointer-events-none"
+        >
+          {loading === "student" ? (
+            <div className="h-16 w-16 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <img src={studentIconUrl} alt="Student" className="h-16 w-16" />
+          )}
+          <span className="mt-4 text-base font-semibold text-[#1A1A1A] font-display group-hover:text-primary transition-colors duration-300">
+            I am Student
+          </span>
+        </button>
+
+        {/* Parent Card */}
+        <button
+          type="button"
+          disabled={loading !== null}
+          onClick={() => handleRoleSelect("parent")}
+          className="w-full aspect-square flex flex-col items-center justify-center border-2 border-border hover:border-primary/50 hover:bg-primary-soft/10 rounded-xl p-6 text-center transition-all duration-300 bg-card group hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:pointer-events-none"
+        >
+          {loading === "parent" ? (
+            <div className="h-16 w-16 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <img src={parentIconUrl} alt="Parent" className="h-16 w-16" />
+          )}
+          <span className="mt-4 text-base font-semibold text-[#1A1A1A] font-display group-hover:text-primary transition-colors duration-300">
+            I am Parent
+          </span>
+        </button>
+
+        {/* Teacher Card */}
+        <button
+          type="button"
+          disabled={loading !== null}
+          onClick={() => handleRoleSelect("teacher")}
+          className="w-full aspect-square flex flex-col items-center justify-center border-2 border-border hover:border-primary/50 hover:bg-primary-soft/10 rounded-xl p-6 text-center transition-all duration-300 bg-card group hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:pointer-events-none"
+        >
+          {loading === "teacher" ? (
+            <div className="h-16 w-16 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <img src={teacherIconUrl} alt="Teacher" className="h-16 w-16" />
+          )}
+          <span className="mt-4 text-base font-semibold text-[#1A1A1A] font-display group-hover:text-primary transition-colors duration-300">
+            I am Teacher
+          </span>
+        </button>
+      </div>
+
+      <div className="text-center mt-6">
+        <button
+          type="button"
+          onClick={() => setStep("form")}
+          disabled={loading !== null}
+          className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          ← Back to form
+        </button>
+      </div>
     </div>
   );
 }
