@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrimaryRole, dashboardPathForRole, type AppRole } from "@/lib/auth-helpers";
 import { Brand } from "@/components/site/Brand";
@@ -52,6 +52,25 @@ import tutorImg from "@/assets/02.png";
 import parentImg from "@/assets/parent-child.jpg";
 import subjectIllustration from "@/assets/subject-illustration.png";
 
+/* ---------- useInView hook — scroll-triggered animations ---------- */
+function useInView(options: IntersectionObserverInit = {}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect(); } },
+      { threshold: 0.12, ...options }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  return { ref, inView };
+}
+
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
@@ -85,8 +104,6 @@ function Landing() {
       <Header />
       <main>
         <Hero />
-        <MetricsBanner />
-        <TrustBar />
         <FeaturedTutors />
         <BrowseSubjects />
         <HowItWorks />
@@ -282,8 +299,8 @@ function Hero() {
 
           {/* Right — Hero image with floating badges */}
           <div className="relative flex justify-center lg:justify-end items-end">
-            {/* Rating badge */}
-            <div className="absolute top-6 -left-4 sm:top-8 sm:left-0 lg:-left-8 z-20 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-slate-100 px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-700">
+            {/* Rating badge — floating */}
+            <div className="absolute top-6 -left-4 sm:top-8 sm:left-0 lg:-left-8 z-20 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-slate-100 px-4 py-3 flex items-center gap-3 float-badge animate-in fade-in duration-700">
               <div className="h-9 w-9 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
               </div>
@@ -306,8 +323,8 @@ function Hero() {
               />
             </div>
 
-            {/* Verified badge */}
-            <div className="absolute bottom-8 -right-2 sm:bottom-12 sm:-right-4 lg:-right-8 z-20 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-slate-100 px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-700">
+            {/* Verified badge — floating with delay */}
+            <div className="absolute bottom-8 -right-2 sm:bottom-12 sm:-right-4 lg:-right-8 z-20 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-slate-100 px-4 py-3 flex items-center gap-3 float-badge-delay animate-in fade-in duration-700">
               <div className="h-9 w-9 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
                 <ShieldCheck className="h-4 w-4 text-[#5357FE]" />
               </div>
@@ -332,64 +349,35 @@ function Hero() {
             </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
 
-/* ---------- Metrics Banner ---------- */
-function MetricsBanner() {
-  const metrics = [
-    { icon: Users, value: "5,000+", label: "Verified Tutors", bg: "bg-indigo-50", color: "text-[#5357FE]", fill: false },
-    { icon: Handshake, value: "25,000+", label: "Direct Connections", bg: "bg-blue-50", color: "text-blue-500", fill: false },
-    { icon: Star, value: "4.9 / 5", label: "Average Student Rating", bg: "bg-amber-50", color: "text-amber-500", fill: true },
-    { icon: ShieldCheck, value: "100%", label: "Free for Parents", bg: "bg-emerald-50", color: "text-emerald-500", fill: false },
-  ];
-
-  return (
-    <section className="bg-white py-8 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="rounded-2xl border border-slate-100 shadow-[0_4px_30px_rgba(83,87,254,0.06)] bg-white px-6 py-6 grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {metrics.map(({ icon: Icon, value, label, bg, color, fill }) => (
-            <div key={label} className="flex items-center gap-4 px-2 sm:px-4">
-              <div className={`h-11 w-11 shrink-0 rounded-full ${bg} ${color} flex items-center justify-center`}>
-                <Icon className={`h-5 w-5 ${fill ? "fill-amber-400 text-amber-400" : ""}`} />
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-black text-slate-800 leading-none tracking-tight">{value}</p>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">{label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ---------- Trust bar ---------- */
-function TrustBar() {
-  const items = ["CBSE", "ICSE", "State Board", "IB", "IGCSE", "NEET", "JEE"];
-  return (
-    <section className="bg-white pb-8">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+        {/* Boards & exams covered — properly aligned inside Hero */}
+        <div className="mt-14 pt-8 border-t border-slate-200/60 flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-y-3 gap-x-6">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
             Boards & exams covered:
           </p>
-          {items.map((i) => (
-            <span key={i} className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200/80 hover:border-[#5357FE]/30 hover:text-[#5357FE] transition-colors cursor-default">
-              {i}
-            </span>
-          ))}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {["CBSE", "ICSE", "State Board", "IB", "IGCSE", "NEET", "JEE"].map((i) => (
+              <span
+                key={i}
+                className="text-xs font-semibold px-4 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200/80 hover:border-[#5357FE]/30 hover:text-[#5357FE] hover:shadow-soft transition-all duration-200 cursor-default shadow-sm"
+              >
+                {i}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </section>
   );
 }
+
+
+
+
 
 /* ---------- Featured Tutors ---------- */
 function FeaturedTutors() {
+  const { ref, inView } = useInView();
   const sampleTutors = [
     { id: "sample-1", name: "Dr. Rajesh Kumar", title: "Senior Physics & Maths Specialist", exp: "12+ years experience", rate: "₹750 / hr", location: "Bengaluru (Online & In-Person)", rating: "4.9", reviewsCount: "84", subjects: ["Physics", "Mathematics", "JEE Prep"], avatar: tutorImg },
     { id: "sample-2", name: "Ananya Sharma", title: "Chemistry & CBSE Science Educator", exp: "7+ years experience", rate: "₹600 / hr", location: "Delhi (Online)", rating: "5.0", reviewsCount: "42", subjects: ["Chemistry", "CBSE Science", "NEET"], avatar: studentImg },
@@ -415,11 +403,11 @@ function FeaturedTutors() {
           </Link>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
+        <div ref={ref} className="grid gap-5 md:grid-cols-3 stagger">
           {sampleTutors.map((tutor) => (
             <div
               key={tutor.id}
-              className="group rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_40px_rgba(83,87,254,0.12)] hover:border-[#5357FE]/20 transition-all duration-300 flex flex-col"
+              className={`group rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_40px_rgba(83,87,254,0.12)] hover:border-[#5357FE]/20 transition-all duration-300 flex flex-col anim-fade-up ${inView ? "visible" : ""}`}
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-start gap-3.5">
@@ -643,6 +631,7 @@ function HowItWorks() {
 
 /* ---------- For Teachers ---------- */
 function ForTeachers() {
+  const { ref, inView } = useInView();
   const benefits = [
     "Create a professional profile in minutes — no approvals",
     "Reach families actively searching in your area",
@@ -653,9 +642,9 @@ function ForTeachers() {
   return (
     <section id="teachers" className="py-20 bg-[#f4f5ff]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
+        <div ref={ref} className="grid items-center gap-12 lg:grid-cols-2">
           {/* Left: Text content */}
-          <div className="space-y-6">
+          <div className={`space-y-6 anim-slide-left ${inView ? "visible" : ""}`}>
             <div className="inline-flex items-center gap-2 rounded-full bg-[#5357FE]/10 border border-[#5357FE]/20 px-4 py-1.5 text-xs font-semibold text-[#5357FE]">
               <Sparkles className="h-3.5 w-3.5" />
               Empower Your Teaching Journey
@@ -698,7 +687,7 @@ function ForTeachers() {
           </div>
 
           {/* Right: Photo with floating card */}
-          <div className="relative">
+          <div className={`relative anim-slide-right ${inView ? "visible" : ""}`}>
             {/* Main photo */}
             <div className="overflow-hidden rounded-3xl shadow-[0_20px_60px_rgba(83,87,254,0.15)] aspect-[4/3]">
               <img
@@ -733,6 +722,7 @@ function ForTeachers() {
 
 /* ---------- Testimonials ---------- */
 function Testimonials() {
+  const { ref, inView } = useInView();
   const reviews = [
     { quote: "Found a brilliant Maths tutor for my son in two days. His grades and confidence have both jumped.", name: "Anita S.", role: "Parent, Bengaluru", img: parentImg, rating: 5 },
     { quote: "I'm a first-year college student and found a great Physics tutor nearby. They are affordable, patient, and explain everything clearly.", name: "Karan D.", role: "Student, Pune", img: studentImg, rating: 5 },
@@ -753,11 +743,11 @@ function Testimonials() {
           </h2>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div ref={ref} className="grid gap-6 md:grid-cols-3 stagger">
           {reviews.map((r) => (
             <figure
               key={r.name}
-              className="relative flex flex-col rounded-2xl bg-white border border-slate-100 shadow-[0_4px_24px_rgba(83,87,254,0.06)] p-7 hover:shadow-[0_8px_40px_rgba(83,87,254,0.12)] hover:border-[#5357FE]/15 transition-all duration-300"
+              className={`relative flex flex-col rounded-2xl bg-white border border-slate-100 shadow-[0_4px_24px_rgba(83,87,254,0.06)] p-7 hover:shadow-[0_8px_40px_rgba(83,87,254,0.12)] hover:border-[#5357FE]/15 transition-all duration-300 anim-fade-up ${inView ? "visible" : ""}`}
             >
               {/* Large quotation mark watermark */}
               <span

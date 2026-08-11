@@ -351,7 +351,7 @@ export function TeacherProfileTab({ me, onClose }: TeacherProfileTabProps) {
   const subjectNames = subjects.map((s) => `${capitalize(s.subject)} (${s.level})`).join(", ");
 
   const inputCls =
-    "w-full h-10 px-3 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] text-sm font-medium text-[#1A1A1A] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all";
+    "w-full h-10 px-3 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] text-sm font-medium text-[#1A1A1A] focus-visible:ring-2 focus-visible:ring-[#5357FE]/10 focus-visible:border-[#5357FE] transition-all";
   const labelCls = "text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1 block";
 
   // Inner components
@@ -375,13 +375,13 @@ export function TeacherProfileTab({ me, onClose }: TeacherProfileTabProps) {
             <Badge
               key={i}
               variant="secondary"
-              className="bg-[#4665FF]/10 text-[#4665FF] border-0 gap-1 pr-1"
+              className="bg-[#5357FE]/10 text-[#5357FE] border-0 gap-1 pr-1"
             >
               {capitalize(v)}
               <button
                 type="button"
                 onClick={() => onChange(values.filter((_, j) => j !== i))}
-                className="ml-0.5 rounded-full hover:bg-[#4665FF]/20 p-0.5 transition-colors"
+                className="ml-0.5 rounded-full hover:bg-[#5357FE]/20 p-0.5 transition-colors"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -447,8 +447,8 @@ export function TeacherProfileTab({ me, onClose }: TeacherProfileTabProps) {
                 onClick={() => toggle(o)}
                 className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                   on
-                    ? "border-[#4665FF] bg-[#4665FF] text-white"
-                    : "border-border bg-white hover:border-[#4665FF]/40 text-muted-foreground"
+                    ? "border-[#5357FE] bg-[#5357FE] text-white"
+                    : "border-border bg-white hover:border-[#5357FE]/40 text-muted-foreground"
                 }`}
               >
                 {o}
@@ -485,7 +485,7 @@ export function TeacherProfileTab({ me, onClose }: TeacherProfileTabProps) {
               Cancel
             </Button>
             <Button
-              className="bg-[#4665FF] hover:bg-[#4665FF]/90 rounded-md"
+              className="bg-[#5357FE] hover:bg-[#5357FE]/90 rounded-md"
               onClick={handleSave}
               disabled={saving}
             >
@@ -504,7 +504,7 @@ export function TeacherProfileTab({ me, onClose }: TeacherProfileTabProps) {
             )}
             <Button
               onClick={enterEdit}
-              className="bg-[#4665FF] text-white hover:bg-[#4665FF]/90 rounded-md px-5 font-semibold"
+              className="bg-[#5357FE] text-white hover:bg-[#5357FE]/90 rounded-md px-5 font-semibold"
             >
               Edit Profile
             </Button>
@@ -1156,7 +1156,7 @@ export function LearnerProfileTab({ me, onClose }: LearnerProfileTabProps) {
   }
 
   const inputCls =
-    "w-full h-10 px-3 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] text-sm font-medium text-[#1A1A1A] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all";
+    "w-full h-10 px-3 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] text-sm font-medium text-[#1A1A1A] focus-visible:ring-2 focus-visible:ring-[#5357FE]/10 focus-visible:border-[#5357FE] transition-all";
   const labelCls = "text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1 block";
 
   return (
@@ -1183,7 +1183,7 @@ export function LearnerProfileTab({ me, onClose }: LearnerProfileTabProps) {
               Cancel
             </Button>
             <Button
-              className="bg-[#4665FF] hover:bg-[#4665FF]/90 rounded-md"
+              className="bg-[#5357FE] hover:bg-[#5357FE]/90 rounded-md"
               onClick={handleSave}
               disabled={saving}
             >
@@ -1201,7 +1201,7 @@ export function LearnerProfileTab({ me, onClose }: LearnerProfileTabProps) {
                 Close
               </Button>
             )}
-            <Button className="bg-[#4665FF] hover:bg-[#4665FF]/90 rounded-md" onClick={enterEdit}>
+            <Button className="bg-[#5357FE] hover:bg-[#5357FE]/90 rounded-md" onClick={enterEdit}>
               <Pencil className="mr-2 h-4 w-4" /> Edit Profile
             </Button>
           </div>
@@ -1322,13 +1322,13 @@ export function LearnerProfileTab({ me, onClose }: LearnerProfileTabProps) {
                       <Badge
                         key={i}
                         variant="secondary"
-                        className="bg-[#4665FF]/10 text-[#4665FF] border-0 pr-1 flex items-center gap-1"
+                        className="bg-[#5357FE]/10 text-[#5357FE] border-0 pr-1 flex items-center gap-1"
                       >
                         {capitalize(sub)}
                         <button
                           type="button"
                           onClick={() => removeSubject(sub)}
-                          className="ml-0.5 rounded-full hover:bg-[#4665FF]/20 p-0.5 transition-colors"
+                          className="ml-0.5 rounded-full hover:bg-[#5357FE]/20 p-0.5 transition-colors"
                         >
                           <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
                             <path
@@ -1390,7 +1390,7 @@ export function LearnerProfileTab({ me, onClose }: LearnerProfileTabProps) {
                         <Badge
                           key={i}
                           variant="secondary"
-                          className="bg-[#4665FF]/10 text-[#4665FF] border-0"
+                          className="bg-[#5357FE]/10 text-[#5357FE] border-0"
                         >
                           {capitalize(sub)}
                         </Badge>

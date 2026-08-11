@@ -256,7 +256,7 @@ function DashboardPage() {
               onClick={() => setActiveTab("home")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                 activeTab === "home"
-                  ? "bg-[#4665FF]/10 text-[#4665FF]"
+                  ? "bg-[#5357FE]/10 text-[#5357FE]"
                   : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
               }`}
             >
@@ -268,7 +268,7 @@ function DashboardPage() {
                 onClick={() => setActiveTab("favourites")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                   activeTab === "favourites"
-                    ? "bg-[#4665FF]/10 text-[#4665FF]"
+                    ? "bg-[#5357FE]/10 text-[#5357FE]"
                     : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
                 }`}
               >
@@ -280,7 +280,7 @@ function DashboardPage() {
               onClick={() => setActiveTab("requests")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                 activeTab === "requests"
-                  ? "bg-[#4665FF]/10 text-[#4665FF]"
+                  ? "bg-[#5357FE]/10 text-[#5357FE]"
                   : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
               }`}
             >
@@ -291,7 +291,7 @@ function DashboardPage() {
               onClick={() => setActiveTab("profile")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                 activeTab === "profile"
-                  ? "bg-[#4665FF]/10 text-[#4665FF]"
+                  ? "bg-[#5357FE]/10 text-[#5357FE]"
                   : "text-muted-foreground hover:bg-slate-50 hover:text-foreground"
               }`}
             >
@@ -500,7 +500,7 @@ function TeacherDashboard({ me, onViewStudentProfile }: TeacherDashboardProps) {
               return (
                 <div
                   key={r.id}
-                  className="bg-white rounded-2xl border border-border pt-8 pb-5 px-5 text-center flex flex-col justify-between hover:shadow-md hover:border-[#4665FF]/20 transition-all shadow-sm relative group"
+                  className="bg-white rounded-2xl border border-border pt-8 pb-5 px-5 text-center flex flex-col justify-between hover:shadow-md hover:border-[#5357FE]/20 transition-all shadow-sm relative group"
                 >
                   <div>
                     {/* Student Avatar */}
@@ -512,7 +512,7 @@ function TeacherDashboard({ me, onViewStudentProfile }: TeacherDashboardProps) {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-lg font-bold text-[#4665FF]">
+                        <div className="flex h-full w-full items-center justify-center bg-[#5357FE]/10 text-lg font-bold text-[#5357FE]">
                           {studentName.slice(0, 1).toUpperCase()}
                         </div>
                       )}
@@ -521,7 +521,7 @@ function TeacherDashboard({ me, onViewStudentProfile }: TeacherDashboardProps) {
                       {studentName}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
-                      <MapPin className="h-3 w-3 shrink-0 text-[#4665FF]" />
+                      <MapPin className="h-3 w-3 shrink-0 text-[#5357FE]" />
                       <span>Grade: {grade}</span>
                     </p>
                   </div>
@@ -561,7 +561,7 @@ function TeacherDashboard({ me, onViewStudentProfile }: TeacherDashboardProps) {
                   <Button
                     size="sm"
                     onClick={() => onViewStudentProfile(r)}
-                    className="w-full mt-5 rounded-md bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm cursor-pointer text-xs"
+                    className="w-full mt-5 rounded-md bg-[#5357FE] hover:bg-[#5357FE]/95 text-white font-medium transition-all shadow-sm cursor-pointer text-xs"
                   >
                     View Profile
                   </Button>
@@ -615,7 +615,7 @@ function StudentProfileView({ student, onBack }: StudentProfileViewProps) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-2xl font-bold text-[#4665FF]">
+              <div className="flex h-full w-full items-center justify-center bg-[#5357FE]/10 text-2xl font-bold text-[#5357FE]">
                 {studentName.slice(0, 1).toUpperCase()}
               </div>
             )}
@@ -623,7 +623,7 @@ function StudentProfileView({ student, onBack }: StudentProfileViewProps) {
 
           <div className="flex-1 text-center sm:text-left space-y-1">
             <h1 className="text-2xl font-bold text-[#1A1A1A] font-display">{studentName}</h1>
-            <p className="text-sm font-semibold text-[#4665FF]">Grade Level: {grade}</p>
+            <p className="text-sm font-semibold text-[#5357FE]">Grade Level: {grade}</p>
             <p className="text-xs text-muted-foreground">Registered Student Member</p>
           </div>
         </div>
@@ -640,7 +640,7 @@ function StudentProfileView({ student, onBack }: StudentProfileViewProps) {
                   <Badge
                     key={idx}
                     variant="secondary"
-                    className="bg-[#4665FF]/5 text-[#4665FF] border-0 rounded-full px-3 py-1 font-semibold text-xs"
+                    className="bg-[#5357FE]/5 text-[#5357FE] border-0 rounded-full px-3 py-1 font-semibold text-xs"
                   >
                     {capitalize(subj)}
                   </Badge>
@@ -844,7 +844,7 @@ function TeacherRequestsView() {
                           <Button
                             size="sm"
                             onClick={() => handleAction(r.id, "accepted")}
-                            className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white font-semibold cursor-pointer h-8 px-3 rounded-md"
+                            className="bg-[#5357FE] hover:bg-[#5357FE]/90 text-white font-semibold cursor-pointer h-8 px-3 rounded-md"
                           >
                             Accept
                           </Button>
@@ -1246,7 +1246,7 @@ function LearnerDashboard({ me, savedTutors, onToggleSave }: LearnerDashboardPro
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Max Hourly Fee
               </span>
-              <span className="text-sm font-bold text-[#4665FF] font-display">
+              <span className="text-sm font-bold text-[#5357FE] font-display">
                 ₹{filters.feeMax}
                 {filters.feeMax >= 5000 ? "+" : ""}/hr
               </span>
@@ -1270,7 +1270,7 @@ function LearnerDashboard({ me, savedTutors, onToggleSave }: LearnerDashboardPro
               <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Min Rating
               </span>
-              <span className="text-sm font-bold text-[#4665FF] font-display">
+              <span className="text-sm font-bold text-[#5357FE] font-display">
                 {filters.minRating === 0 ? "Any" : `${filters.minRating}★ & above`}
               </span>
             </div>
@@ -1284,7 +1284,7 @@ function LearnerDashboard({ me, savedTutors, onToggleSave }: LearnerDashboardPro
                     onClick={() => set("minRating", r)}
                     className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 text-center flex items-center justify-center gap-0.5 cursor-pointer ${
                       isActive
-                        ? "bg-[#4665FF] text-white shadow-sm font-bold"
+                        ? "bg-[#5357FE] text-white shadow-sm font-bold"
                         : "text-muted-foreground hover:bg-[#E2E8F0]/40 hover:text-foreground"
                     }`}
                   >
@@ -1311,7 +1311,7 @@ function LearnerDashboard({ me, savedTutors, onToggleSave }: LearnerDashboardPro
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground font-medium">
           Showing{" "}
-          <span className="font-bold text-[#4665FF] font-display">{sortedTutors.length}</span> tutor
+          <span className="font-bold text-[#5357FE] font-display">{sortedTutors.length}</span> tutor
           {sortedTutors.length === 1 ? "" : "s"}
         </p>
       </div>
@@ -1319,7 +1319,7 @@ function LearnerDashboard({ me, savedTutors, onToggleSave }: LearnerDashboardPro
       {/* Tutor Listings Grid */}
       {loadingTutors ? (
         <div className="py-20 text-center text-muted-foreground flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4665FF]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5357FE]"></div>
           <span>Finding tutors...</span>
         </div>
       ) : sortedTutors.length === 0 ? (
@@ -1366,7 +1366,7 @@ function TutorGridCard({
       : `₹${tutor.fee_min}–${tutor.fee_max}/hr`;
 
   return (
-    <div className="bg-white rounded-2xl border border-border pt-8 pb-5 px-5 text-center flex flex-col justify-between hover:shadow-md hover:border-[#4665FF]/20 transition-all shadow-sm relative group">
+    <div className="bg-white rounded-2xl border border-border pt-8 pb-5 px-5 text-center flex flex-col justify-between hover:shadow-md hover:border-[#5357FE]/20 transition-all shadow-sm relative group">
       <div>
         <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center mx-auto mb-4 border border-border overflow-hidden shrink-0">
           {tutor.profiles?.avatar_url ? (
@@ -1383,7 +1383,7 @@ function TutorGridCard({
           {tutor.profiles?.full_name ? capitalize(tutor.profiles.full_name) : "Tutor Profile"}
         </h3>
         <p className="text-xs text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
-          <MapPin className="h-3 w-3 shrink-0 text-[#4665FF]" />
+          <MapPin className="h-3 w-3 shrink-0 text-[#5357FE]" />
           <span className="truncate">
             {tutor.profiles?.area
               ? `${capitalize(tutor.profiles.area)}, ${capitalize(tutor.profiles.city)}`
@@ -1414,8 +1414,8 @@ function TutorGridCard({
             <p className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
               Rating
             </p>
-            <p className="font-bold text-[#4665FF] flex items-center justify-end gap-0.5 mt-0.5">
-              <Star className="h-3.5 w-3.5 fill-current text-[#4665FF]" />
+            <p className="font-bold text-[#5357FE] flex items-center justify-end gap-0.5 mt-0.5">
+              <Star className="h-3.5 w-3.5 fill-current text-[#5357FE]" />
               {rating}
             </p>
           </div>
@@ -1425,7 +1425,7 @@ function TutorGridCard({
       <div className="relative mt-5 flex gap-2">
         <Button
           asChild
-          className="flex-1 h-10 rounded-md bg-[#4665FF] text-white hover:bg-[#4665FF]/95 font-medium transition-all shadow-sm cursor-pointer"
+          className="flex-1 h-10 rounded-md bg-[#5357FE] text-white hover:bg-[#5357FE]/95 font-medium transition-all shadow-sm cursor-pointer"
         >
           <Link to="/tutors/$id" params={{ id: tutor.user_id }}>
             View Profile
