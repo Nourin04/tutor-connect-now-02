@@ -210,38 +210,3 @@ Learner clicks "Request Details"
                                 +--> Learner dashboard updates to show phone
 ```
 
----
-
-## Installation and Local Development
-
-### Configuration Setup
-1. Clone the project repository code locally.
-2. Install all dependencies using Bun or npm:
-   ```bash
-   npm install
-   ```
-3. Establish your environment configuration file. Create a `.env` file in the root folder of the project:
-   ```env
-   VITE_SUPABASE_URL=https://your-project-id.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key-here
-   ```
-
-### Running the App
-* **Local Development Server**:
-  Launch the Vite compiler locally:
-  ```bash
-  npm run dev
-  ```
-  The app will run at `http://localhost:3000`.
-
-* **Build Configuration**:
-  Build static assets for deployment:
-  ```bash
-  npm run build
-  ```
-
-* **Database Migrations Application**:
-  Supabase migrations are located inside the `/supabase/migrations` folder. They will automatically be applied upon linking your Supabase account and executing:
-  ```bash
-  supabase db push
-  ```
