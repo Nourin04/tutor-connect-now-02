@@ -1,56 +1,18 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchPrimaryRole, dashboardPathForRole, type AppRole } from "@/lib/auth-helpers";
+import { fetchPrimaryRole, dashboardPathForRole } from "@/lib/auth-helpers";
 import { Brand } from "@/components/site/Brand";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Search,
-  MapPin,
-  Star,
-  ShieldCheck,
-  Users,
-  Sparkles,
-  ArrowRight,
-  Check,
-  MessageCircle,
-  BookOpen,
-  GraduationCap,
-  ChevronRight,
-  CheckCircle2,
-  Calculator,
-  Atom,
-  Dna,
-  Code,
-  ChevronDown,
-  Menu,
-  X,
-  Handshake,
-  Twitter,
-  Instagram,
-  Linkedin,
-  Facebook,
-  Heart,
-} from "lucide-react";
-import heroTutor from "@/assets/01.png";
-import studentImg from "@/assets/student-1.jpg";
-import tutorImg from "@/assets/02.png";
-import parentImg from "@/assets/parent-child.jpg";
-import subjectIllustration from "@/assets/subject-illustration.png";
+import { Search, MapPin, Star, ArrowRight, ArrowUpRight, Menu, X } from "lucide-react";
+import heroPhoto from "@/assets/01.png";
+import tutorPhoto from "@/assets/02.png";
 
 /* ---------- useInView hook — scroll-triggered animations ---------- */
 function useInView(options: IntersectionObserverInit = {}) {
@@ -61,14 +23,51 @@ function useInView(options: IntersectionObserverInit = {}) {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect(); } },
-      { threshold: 0.12, ...options }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.12, ...options },
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
 
   return { ref, inView };
+}
+
+// Must match the subject names used by the /tutors filters.
+const SUBJECTS = [
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "English",
+  "Hindi",
+  "Computer Science",
+  "Economics",
+  "Accountancy",
+  "Music",
+  "Art",
+];
+
+const SUBJECT_ALIASES: Record<string, string> = {
+  math: "Mathematics",
+  maths: "Mathematics",
+  cs: "Computer Science",
+  coding: "Computer Science",
+  programming: "Computer Science",
+  accounts: "Accountancy",
+  bio: "Biology",
+  chem: "Chemistry",
+};
+
+function resolveSubject(text: string) {
+  const t = text.trim().toLowerCase();
+  if (!t) return undefined;
+  return SUBJECTS.find((s) => s.toLowerCase() === t) ?? SUBJECT_ALIASES[t];
 }
 
 export const Route = createFileRoute("/")({
@@ -100,13 +99,14 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-white text-[#0f172a] font-sans antialiased selection:bg-[#5357FE]/10 selection:text-[#5357FE]">
+    <div className="min-h-screen bg-[#FBFAF7] text-[#16161D] font-sans antialiased selection:bg-[#5357FE] selection:text-white">
       <Header />
       <main>
         <Hero />
-        <FeaturedTutors />
-        <BrowseSubjects />
+        <Promises />
         <HowItWorks />
+        <BrowseSubjects />
+        <FeaturedTutors />
         <ForTeachers />
         <Testimonials />
         <FAQ />
@@ -118,90 +118,104 @@ function Landing() {
 }
 
 /* ---------- Header ---------- */
+const NAV = [
+  { label: "How it works", href: "#how" },
+  { label: "Subjects", href: "#subjects" },
+  { label: "For tutors", href: "#teachers" },
+  { label: "FAQ", href: "#faq" },
+];
+
 function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100">
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Brand className="h-8" />
+    <header className="sticky top-0 z-50 bg-[#FBFAF7]/85 backdrop-blur-md border-b border-[#E7E4DC]">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Brand className="h-7" />
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-7">
+        <nav className="hidden md:flex items-center gap-8">
           <Link
             to="/tutors"
-            className="text-sm font-semibold text-slate-600 hover:text-[#5357FE] transition-colors duration-150"
+            className="text-sm font-medium text-[#16161D] hover:text-[#5357FE] transition-colors"
           >
-            Find Tutors
+            Find tutors
           </Link>
-          {[
-            { label: "How it Works", href: "#how" },
-            { label: "Subjects", href: "#subjects" },
-            { label: "For Tutors", href: "#teachers" },
-          ].map((item) => (
+          {NAV.map((item) => (
             <a
               key={item.label}
               href={item.href}
-              className="text-sm font-semibold text-slate-600 hover:text-[#5357FE] transition-colors duration-150"
+              className="text-sm font-medium text-[#5B5B66] hover:text-[#16161D] transition-colors"
             >
               {item.label}
             </a>
           ))}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-[#5357FE] cursor-pointer outline-none transition-colors">
-              Resources <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-xl border border-slate-100 shadow-lg min-w-[150px]">
-              <DropdownMenuItem className="rounded-lg font-medium cursor-pointer">Blog</DropdownMenuItem>
-              <DropdownMenuItem className="rounded-lg font-medium cursor-pointer">Guides</DropdownMenuItem>
-              <DropdownMenuItem className="rounded-lg font-medium cursor-pointer">FAQ</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </nav>
 
-        {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-5">
           <Link
             to="/auth"
             search={{ mode: "signin" }}
-            className="text-sm font-semibold text-slate-700 hover:text-[#5357FE] transition-colors px-2"
+            className="text-sm font-medium text-[#16161D] hover:text-[#5357FE] transition-colors"
           >
             Sign in
           </Link>
-          <Button
-            className="bg-[#5357FE] hover:bg-[#4245d4] text-white rounded-xl font-semibold px-5 h-10 shadow-none transition-all duration-200 hover:shadow-[0_4px_20px_rgba(83,87,254,0.35)]"
-            asChild
+          <Link
+            to="/auth"
+            search={{ mode: "signup" }}
+            className="inline-flex h-10 items-center rounded-full bg-[#16161D] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#5357FE]"
           >
-            <Link to="/auth" search={{ mode: "signup" }}>
-              Get Started
-            </Link>
-          </Button>
+            Get started
+          </Link>
         </div>
 
-        {/* Mobile toggle */}
         <button
-          className="md:hidden text-slate-700 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+          className="md:hidden -mr-2 p-2 text-[#16161D]"
           onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white px-4 py-5 space-y-4 shadow-lg">
-          <nav className="flex flex-col gap-3">
-            <Link to="/tutors" className="text-sm font-semibold text-slate-700 py-1" onClick={() => setMobileOpen(false)}>Find Tutors</Link>
-            <a href="#how" className="text-sm font-semibold text-slate-700 py-1" onClick={() => setMobileOpen(false)}>How it Works</a>
-            <a href="#subjects" className="text-sm font-semibold text-slate-700 py-1" onClick={() => setMobileOpen(false)}>Subjects</a>
-            <a href="#teachers" className="text-sm font-semibold text-slate-700 py-1" onClick={() => setMobileOpen(false)}>For Tutors</a>
+        <div className="md:hidden border-t border-[#E7E4DC] bg-[#FBFAF7] px-4 pb-6 pt-2">
+          <nav className="flex flex-col">
+            <Link
+              to="/tutors"
+              className="py-3 text-base font-medium border-b border-[#E7E4DC]"
+              onClick={() => setMobileOpen(false)}
+            >
+              Find tutors
+            </Link>
+            {NAV.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className="py-3 text-base font-medium border-b border-[#E7E4DC]"
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.label}
+              </a>
+            ))}
           </nav>
-          <div className="pt-3 border-t border-slate-100 flex flex-col gap-3">
-            <Link to="/auth" search={{ mode: "signin" }} className="text-sm font-semibold text-slate-700 text-center" onClick={() => setMobileOpen(false)}>Sign in</Link>
-            <Button className="bg-[#5357FE] text-white rounded-xl w-full" asChild>
-              <Link to="/auth" search={{ mode: "signup" }} onClick={() => setMobileOpen(false)}>Get Started</Link>
-            </Button>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <Link
+              to="/auth"
+              search={{ mode: "signin" }}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-[#16161D] text-sm font-semibold"
+              onClick={() => setMobileOpen(false)}
+            >
+              Sign in
+            </Link>
+            <Link
+              to="/auth"
+              search={{ mode: "signup" }}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-[#16161D] text-sm font-semibold text-white"
+              onClick={() => setMobileOpen(false)}
+            >
+              Get started
+            </Link>
           </div>
         </div>
       )}
@@ -213,244 +227,128 @@ function Header() {
 function Hero() {
   const navigate = useNavigate();
   const [subjectQuery, setSubjectQuery] = useState("");
-  const [locationQuery, setLocationQuery] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/tutors", search: { query: subjectQuery || undefined, location: locationQuery || undefined } });
+    const subject = resolveSubject(subjectQuery);
+    navigate({
+      to: "/tutors",
+      search: {
+        subject,
+        q: subject ? undefined : subjectQuery.trim() || undefined,
+        city: cityQuery.trim() || undefined,
+      },
+    });
   };
 
   return (
-    <section className="relative overflow-hidden bg-[#f5f5ff] pt-12 pb-0 lg:pt-20">
-      {/* Decorative blobs */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 left-1/4 h-[600px] w-[600px] rounded-full bg-[#5357FE]/8 blur-3xl" />
-        <div className="absolute top-20 right-0 h-[400px] w-[400px] rounded-full bg-purple-200/30 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-[300px] w-[500px] rounded-full bg-indigo-100/40 blur-3xl" />
-      </div>
-
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-end gap-10 lg:grid-cols-2">
+    <section className="relative">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 pb-16 lg:pt-20 lg:pb-24">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-10 items-start">
           {/* Left */}
-          <div className="pb-12 lg:pb-20 space-y-7 text-center lg:text-left">
-            {/* Pill badge */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#5357FE]/10 border border-[#5357FE]/20 px-4 py-1.5 text-xs font-semibold text-[#5357FE]">
-              <Sparkles className="h-3.5 w-3.5" />
-              Direct Tutor Marketplace • 0% Commission
-            </div>
-
-            {/* Headline */}
-            <h1 className="text-[42px] sm:text-5xl lg:text-[56px] font-extrabold leading-[1.08] tracking-tight text-[#0f172a]">
-              Find the perfect tutor.
-              <br />
-              <span>Right when </span>
-              <span className="text-[#5357FE]">you need it.</span>
-            </h1>
-
-            {/* Subtext */}
-            <p className="mx-auto lg:mx-0 max-w-lg text-[17px] text-slate-500 leading-relaxed">
-              Connect with verified local and online tutors for any subject, class, or board. Transparent pricing. Direct contact. No hidden fees.
+          <div className="lg:col-span-7 lg:pt-6">
+            <p className="flex items-center gap-3 text-sm font-medium text-[#5B5B66]">
+              <span className="h-px w-8 bg-[#16161D]" />
+              Tutoring, without the agency
             </p>
 
-            {/* Search Widget */}
+            <h1 className="mt-6 font-serif font-normal text-[44px] leading-[1.02] tracking-[-0.03em] sm:text-6xl lg:text-[80px]">
+              The right tutor is <em className="italic text-[#5357FE]">probably</em> just down
+              the road.
+            </h1>
+
+            <p className="mt-7 max-w-xl text-lg leading-relaxed text-[#5B5B66]">
+              TutorConnect lists local and online tutors with their real fees, subjects and
+              boards. Find someone you like and contact them yourself. No middleman, no
+              commission.
+            </p>
+
             <form
               onSubmit={handleSearchSubmit}
-              className="bg-white rounded-2xl border border-slate-200 shadow-[0_8px_40px_rgba(83,87,254,0.10)] p-2 flex flex-col sm:flex-row gap-2 max-w-[520px] mx-auto lg:mx-0"
+              className="mt-10 flex max-w-2xl flex-col rounded-2xl border border-[#16161D] bg-white sm:flex-row sm:items-stretch sm:rounded-full sm:p-1.5"
             >
-              <div className="flex flex-1 items-center gap-2.5 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-100 focus-within:border-[#5357FE]/40 focus-within:bg-white transition-all">
-                <BookOpen className="h-4 w-4 text-slate-400 shrink-0" />
-                <Input
+              <label className="flex flex-1 items-center gap-3 px-5 py-4 sm:py-0">
+                <Search className="h-4 w-4 shrink-0 text-[#5B5B66]" />
+                <span className="sr-only">Subject</span>
+                <input
                   type="text"
-                  placeholder="Subject (e.g. Maths, Physics)"
+                  list="landing-subjects"
+                  placeholder="Subject, e.g. Physics"
                   value={subjectQuery}
                   onChange={(e) => setSubjectQuery(e.target.value)}
-                  className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-400 text-slate-700 font-medium"
+                  className="w-full bg-transparent text-[15px] outline-none placeholder:text-[#8A8A94]"
                 />
-              </div>
-              <div className="flex flex-1 items-center gap-2.5 px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-100 focus-within:border-[#5357FE]/40 focus-within:bg-white transition-all">
-                <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                <Input
+                <datalist id="landing-subjects">
+                  {SUBJECTS.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+              </label>
+              <div className="h-px bg-[#E7E4DC] sm:h-auto sm:w-px sm:my-2" />
+              <label className="flex flex-1 items-center gap-3 px-5 py-4 sm:py-0">
+                <MapPin className="h-4 w-4 shrink-0 text-[#5B5B66]" />
+                <span className="sr-only">City</span>
+                <input
                   type="text"
-                  placeholder="Location or City"
-                  value={locationQuery}
-                  onChange={(e) => setLocationQuery(e.target.value)}
-                  className="border-0 bg-transparent p-0 h-auto text-sm focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-400 text-slate-700 font-medium"
+                  placeholder="City or area"
+                  value={cityQuery}
+                  onChange={(e) => setCityQuery(e.target.value)}
+                  className="w-full bg-transparent text-[15px] outline-none placeholder:text-[#8A8A94]"
                 />
-              </div>
-              <Button
+              </label>
+              <button
                 type="submit"
-                className="shrink-0 bg-[#5357FE] hover:bg-[#4245d4] text-white rounded-xl px-6 py-3 font-semibold transition-all hover:shadow-[0_4px_20px_rgba(83,87,254,0.35)] flex items-center gap-2"
+                className="m-1.5 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#5357FE] px-7 text-sm font-semibold text-white transition-colors hover:bg-[#16161D] sm:m-0 sm:rounded-full"
               >
-                <Search className="h-4 w-4" />
-                Search Tutors
-              </Button>
+                Find tutors
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </form>
 
-            {/* Trust pills */}
-            <div className="flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 text-sm text-slate-500 font-medium">
-              {["100% Free for Parents", "Direct Contact Details", "Verified Educators"].map((t) => (
-                <span key={t} className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-[#5357FE]" />
-                  {t}
-                </span>
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <span className="text-[#8A8A94]">Popular:</span>
+              {["Mathematics", "Physics", "Chemistry", "English", "Computer Science"].map((s) => (
+                <Link
+                  key={s}
+                  to="/tutors"
+                  search={{ subject: s }}
+                  className="text-[#16161D] underline decoration-[#C9C5BA] underline-offset-4 hover:decoration-[#5357FE] hover:text-[#5357FE] transition-colors"
+                >
+                  {s}
+                </Link>
               ))}
             </div>
           </div>
 
-          {/* Right — Hero image with floating badges */}
-          <div className="relative flex justify-center lg:justify-end items-end">
-            {/* Rating badge — floating */}
-            <div className="absolute top-6 -left-4 sm:top-8 sm:left-0 lg:-left-8 z-20 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-slate-100 px-4 py-3 flex items-center gap-3 float-badge animate-in fade-in duration-700">
-              <div className="h-9 w-9 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              </div>
-              <div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-sm font-bold text-slate-800">4.9 / 5.0</span>
-                  <span className="text-xs text-slate-400">(120+ reviews)</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-none mt-0.5">Highest Rated Tutors</p>
-              </div>
-            </div>
-
-            {/* Main image */}
-            <div className="relative overflow-hidden rounded-t-[2rem] w-full max-w-md lg:max-w-none">
+          {/* Right */}
+          <figure className="lg:col-span-5">
+            <div className="relative overflow-hidden rounded-[28px] bg-[#EDEAE2] aspect-[4/3] sm:aspect-[4/5] max-h-[620px] w-full">
               <img
-                src={heroTutor}
-                alt="Tutor helping a student"
-                className="w-full object-cover object-top rounded-t-[2rem]"
-                style={{ maxHeight: 460 }}
+                src={heroPhoto}
+                alt="A tutor explaining a counting exercise to a young student"
+                className="h-full w-full object-cover object-[30%_60%]"
               />
             </div>
-
-            {/* Verified badge — floating with delay */}
-            <div className="absolute bottom-8 -right-2 sm:bottom-12 sm:-right-4 lg:-right-8 z-20 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-slate-100 px-4 py-3 flex items-center gap-3 float-badge-delay animate-in fade-in duration-700">
-              <div className="h-9 w-9 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
-                <ShieldCheck className="h-4 w-4 text-[#5357FE]" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800 leading-tight">Verified Qualifications</p>
-                <p className="text-xs text-slate-400 mt-0.5">CBSE, ICSE, IB & State</p>
-              </div>
-            </div>
-
-            {/* Families badge */}
-            <div className="absolute bottom-8 -left-4 sm:bottom-12 sm:left-0 lg:-left-8 z-20 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] border border-slate-100 px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-700">
-              <div className="flex -space-x-2">
-                <img className="h-7 w-7 rounded-full ring-2 ring-white object-cover" src={studentImg} alt="" />
-                <img className="h-7 w-7 rounded-full ring-2 ring-white object-cover" src={parentImg} alt="" />
-                <img className="h-7 w-7 rounded-full ring-2 ring-white object-cover" src={tutorImg} alt="" />
-                <div className="h-7 w-7 rounded-full ring-2 ring-white bg-[#5357FE] flex items-center justify-center text-[9px] font-bold text-white shrink-0">+5K</div>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800 leading-tight">5,000+ Families</p>
-                <p className="text-xs text-slate-400 mt-0.5">Connected Successfully</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Boards & exams covered — properly aligned inside Hero */}
-        <div className="mt-14 pt-8 border-t border-slate-200/60 flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-y-3 gap-x-6">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
-            Boards & exams covered:
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {["CBSE", "ICSE", "State Board", "IB", "IGCSE", "NEET", "JEE"].map((i) => (
-              <span
-                key={i}
-                className="text-xs font-semibold px-4 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200/80 hover:border-[#5357FE]/30 hover:text-[#5357FE] hover:shadow-soft transition-all duration-200 cursor-default shadow-sm"
-              >
-                {i}
-              </span>
-            ))}
-          </div>
+            <figcaption className="mt-4 flex gap-3 text-sm leading-relaxed text-[#5B5B66]">
+              <span className="mt-2.5 h-px w-6 shrink-0 bg-[#16161D]" />
+              Every profile shows fees, subjects, boards and teaching mode up front, before you
+              send a single message.
+            </figcaption>
+          </figure>
         </div>
       </div>
-    </section>
-  );
-}
 
-
-
-
-
-/* ---------- Featured Tutors ---------- */
-function FeaturedTutors() {
-  const { ref, inView } = useInView();
-  const sampleTutors = [
-    { id: "sample-1", name: "Dr. Rajesh Kumar", title: "Senior Physics & Maths Specialist", exp: "12+ years experience", rate: "₹750 / hr", location: "Bengaluru (Online & In-Person)", rating: "4.9", reviewsCount: "84", subjects: ["Physics", "Mathematics", "JEE Prep"], avatar: tutorImg },
-    { id: "sample-2", name: "Ananya Sharma", title: "Chemistry & CBSE Science Educator", exp: "7+ years experience", rate: "₹600 / hr", location: "Delhi (Online)", rating: "5.0", reviewsCount: "42", subjects: ["Chemistry", "CBSE Science", "NEET"], avatar: studentImg },
-    { id: "sample-3", name: "David Miller", title: "IB & IGCSE English Literature Expert", exp: "9+ years experience", rate: "₹850 / hr", location: "Mumbai (In-Person)", rating: "4.8", reviewsCount: "59", subjects: ["English Lit", "IB Board", "IGCSE"], avatar: parentImg },
-  ];
-
-  return (
-    <section className="py-20 bg-white border-t border-slate-100">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
-          <div>
-            <span className="inline-flex items-center text-xs font-bold text-[#5357FE] uppercase tracking-wider mb-2">Top Rated Educators</span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Featured <span className="text-[#5357FE]">Local & Online</span> Tutors
-            </h2>
-            <p className="mt-2 text-slate-500">Handpicked, verified tutors ready to help you excel.</p>
-          </div>
-          <Link
-            to="/tutors"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#5357FE] hover:gap-2.5 transition-all shrink-0"
-          >
-            Browse All Tutors <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div ref={ref} className="grid gap-5 md:grid-cols-3 stagger">
-          {sampleTutors.map((tutor) => (
-            <div
-              key={tutor.id}
-              className={`group rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_40px_rgba(83,87,254,0.12)] hover:border-[#5357FE]/20 transition-all duration-300 flex flex-col anim-fade-up ${inView ? "visible" : ""}`}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start gap-3.5">
-                  <img src={tutor.avatar} alt={tutor.name} className="h-14 w-14 rounded-xl object-cover border border-slate-100 shrink-0" />
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-bold text-slate-900 text-[15px] group-hover:text-[#5357FE] transition-colors">{tutor.name}</h3>
-                      <ShieldCheck className="h-3.5 w-3.5 text-[#5357FE] shrink-0" />
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">{tutor.title}</p>
-                    <p className="text-xs font-semibold text-[#5357FE] mt-1">{tutor.exp}</p>
-                  </div>
-                </div>
-                <button className="text-slate-300 hover:text-red-400 transition-colors shrink-0 mt-0.5">
-                  <Heart className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-4">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{tutor.location}</span>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 mb-5">
-                {tutor.subjects.map((sub) => (
-                  <span key={sub} className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-100">{sub}</span>
-                ))}
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
-                <div>
-                  <div className="flex items-center gap-1 text-sm font-bold text-slate-800">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                    <span>{tutor.rating}</span>
-                    <span className="text-xs text-slate-400 font-normal">({tutor.reviewsCount})</span>
-                  </div>
-                  <p className="text-sm font-bold text-slate-800 mt-0.5">{tutor.rate}</p>
-                </div>
-                <Button asChild size="sm" className="bg-[#5357FE] hover:bg-[#4245d4] text-white rounded-xl font-semibold px-4 shadow-none hover:shadow-[0_4px_16px_rgba(83,87,254,0.35)] transition-all">
-                  <Link to="/tutors">View Profile</Link>
-                </Button>
-              </div>
-            </div>
+      {/* Boards strip */}
+      <div className="border-y border-[#E7E4DC]">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-3 px-4 py-5 sm:px-6 lg:px-8">
+          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8A8A94]">
+            Tutors for
+          </span>
+          {["CBSE", "ICSE", "State boards", "IB", "IGCSE", "JEE", "NEET"].map((b) => (
+            <span key={b} className="font-serif text-xl text-[#16161D]">
+              {b}
+            </span>
           ))}
         </div>
       </div>
@@ -458,116 +356,23 @@ function FeaturedTutors() {
   );
 }
 
-/* ---------- Browse by Subject ---------- */
-function BrowseSubjects() {
-  const subjects = [
-    { title: "Mathematics & Statistics", icon: Calculator, count: "1,200+ Tutors", desc: "Algebra, Calculus, Geometry, Statistics for all school levels." },
-    { title: "Physics & Chemistry", icon: Atom, count: "950+ Tutors", desc: "Conceptual science tuition, lab practicals, and numericals." },
-    { title: "Biology & Life Sciences", icon: Dna, count: "780+ Tutors", desc: "Botany, Zoology, Genetics, and medical entrance foundations." },
-    { title: "English & Languages", icon: BookOpen, count: "850+ Tutors", desc: "Grammar, Literature, Spoken English, and competitive prep." },
-    { title: "Competitive Exam Prep", icon: GraduationCap, count: "1,100+ Tutors", desc: "Specialized coaching for JEE Main, NEET, and Olympiads." },
-    { title: "Coding & Computer Science", icon: Code, count: "640+ Tutors", desc: "Python, Java, Web Development, and Computer Applications." },
-  ];
-
-  const stats = [
-    { icon: Users, value: "5,000+", label: "Verified Tutors" },
-    { icon: Handshake, value: "25,000+", label: "Direct Connections" },
-    { icon: Star, value: "4.9 / 5", label: "Average Rating", fill: true },
-    { icon: ShieldCheck, value: "100%", label: "Free for Parents" },
+/* ---------- Promises (honest numbers only) ---------- */
+function Promises() {
+  const items = [
+    { big: "₹0", text: "What parents and students pay TutorConnect. Browsing and contacting tutors is free." },
+    { big: "0%", text: "Commission on tutors' fees. You pay the tutor directly, at the rate on their profile." },
+    { big: "1:1", text: "You speak to the tutor yourself. No call centre in between, no reassignments." },
   ];
 
   return (
-    <section id="subjects" className="py-20 bg-[#f4f5ff]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Two-column header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 mb-12">
-          <div className="max-w-lg">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-[#5357FE]/10 border border-[#5357FE]/20 px-3.5 py-1.5 text-xs font-semibold text-[#5357FE] mb-4">
-              <Sparkles className="h-3.5 w-3.5" />
-              Explore Categories
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold text-slate-900 tracking-tight leading-tight">
-              Browse Tutors{" "}
-              <span className="text-[#5357FE]">by Subject</span>
-            </h2>
-            <p className="mt-4 text-[16px] text-slate-500 leading-relaxed">
-              Find expert tutors specialized in your exact subject and exam syllabus.
-            </p>
+    <section className="bg-white">
+      <div className="mx-auto grid max-w-7xl gap-px bg-[#E7E4DC] px-0 sm:grid-cols-3">
+        {items.map((i) => (
+          <div key={i.big} className="bg-white px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+            <p className="font-serif text-6xl tracking-[-0.03em] text-[#5357FE]">{i.big}</p>
+            <p className="mt-4 max-w-xs text-[15px] leading-relaxed text-[#5B5B66]">{i.text}</p>
           </div>
-          {/* 3D Illustration */}
-          <div className="hidden lg:block shrink-0">
-            <img
-              src={subjectIllustration}
-              alt="Educational illustration"
-              className="h-52 w-52 object-contain drop-shadow-xl"
-            />
-          </div>
-        </div>
-
-        {/* Subject Cards — horizontal layout */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subjects.map((sub) => {
-            const Icon = sub.icon;
-            return (
-              <Link
-                key={sub.title}
-                to="/tutors"
-                search={{ query: sub.title.split(" ")[0] }}
-                className="group flex flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(83,87,254,0.11)] hover:border-[#5357FE]/25 transition-all duration-300"
-              >
-                {/* Icon + Title + Count row */}
-                <div className="flex items-start gap-4">
-                  <div className="h-11 w-11 shrink-0 rounded-xl bg-[#5357FE]/8 text-[#5357FE] flex items-center justify-center group-hover:bg-[#5357FE] group-hover:text-white transition-all duration-300">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-[14px] font-bold text-slate-900 group-hover:text-[#5357FE] transition-colors leading-tight">{sub.title}</h3>
-                      <span className="shrink-0 text-[11px] font-bold text-[#5357FE] bg-[#5357FE]/8 px-2.5 py-0.5 rounded-full">{sub.count}</span>
-                    </div>
-                    <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">{sub.desc}</p>
-                  </div>
-                </div>
-                {/* Explore link */}
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1 text-xs font-bold text-[#5357FE]">
-                  Explore Tutors <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Stats + CTA banner */}
-        <div className="mt-8 rounded-3xl bg-gradient-to-r from-[#5357FE] via-[#5f62ff] to-[#7c3aed] px-8 py-8 flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden">
-          {/* Decorative circles */}
-          <div className="absolute right-48 top-0 h-40 w-40 rounded-full bg-white/5 -translate-y-1/2 pointer-events-none" />
-          <div className="absolute right-24 bottom-0 h-24 w-24 rounded-full bg-white/5 translate-y-1/2 pointer-events-none" />
-
-          {/* Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 flex-1">
-            {stats.map(({ icon: Icon, value, label, fill }) => (
-              <div key={label} className="flex flex-col items-center sm:items-start gap-1.5">
-                <Icon className={`h-6 w-6 text-white/70 ${fill ? "fill-white/70" : ""}`} />
-                <p className="text-2xl font-black text-white tracking-tight">{value}</p>
-                <p className="text-xs font-medium text-indigo-200">{label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA */}
-          <div className="shrink-0 text-center lg:text-right">
-            <p className="text-base font-bold text-white">Can't find what you need?</p>
-            <p className="text-sm text-indigo-200 mt-0.5 mb-4">Let us help you find the perfect tutor for your requirements.</p>
-            <Button
-              className="bg-white text-[#5357FE] hover:bg-white/90 rounded-xl font-bold px-5 h-10 shadow-none transition-all"
-              asChild
-            >
-              <Link to="/tutors">
-                Request a Tutor <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </div>
+        ))}
       </div>
     </section>
   );
@@ -578,51 +383,256 @@ function HowItWorks() {
   const [activePersona, setActivePersona] = useState<"learner" | "teacher">("learner");
 
   const learnerSteps = [
-    { n: "01", title: "Tell us what you need", desc: "Search by subject, class or board, location, and your preferred mode (online or in-person)." },
-    { n: "02", title: "Compare local tutors", desc: "Browse rich profiles with qualifications, hourly rates, teaching modes, and ratings." },
-    { n: "03", title: "Connect directly", desc: "Reach out to your chosen tutor directly with zero platform fees or middleman charges." },
+    { title: "Search by what you actually need", desc: "Subject, class, board, city, and whether you want lessons online or at home." },
+    { title: "Read the profiles properly", desc: "Qualifications, experience, fees and reviews are all there. Shortlist the ones that fit." },
+    { title: "Contact the tutor directly", desc: "Message them, agree on a trial class and timings, and pay them however you both prefer." },
   ];
 
   const teacherSteps = [
-    { n: "01", title: "Create your free profile", desc: "Sign up in 2 minutes and list your qualifications, subject expertise, and hourly rates." },
-    { n: "02", title: "Get discovered locally", desc: "Appear in search results when students and parents search in your city or subject." },
-    { n: "03", title: "Start teaching & earning", desc: "Receive direct contact requests from interested students and set your own terms." },
+    { title: "Make a free profile", desc: "Add your subjects, classes, boards, fees and when you're available. Takes a few minutes." },
+    { title: "Show up in local searches", desc: "Parents and students searching in your city and subject will find your profile." },
+    { title: "Teach on your terms", desc: "Families contact you directly. You set the fee and the schedule, and keep all of it." },
   ];
 
   const steps = activePersona === "learner" ? learnerSteps : teacherSteps;
 
   return (
-    <section id="how" className="py-20 bg-white border-t border-slate-100">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <span className="inline-block text-xs font-bold text-[#5357FE] uppercase tracking-widest mb-3">Simple Process</span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">How TutorConnect Works</h2>
-          <p className="mt-3 text-slate-500">A seamless journey designed for both students and tutors.</p>
+    <section id="how" className="scroll-mt-16 py-20 lg:py-28">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
+        <div className="lg:col-span-4">
+          <h2 className="font-serif text-4xl font-normal leading-[1.05] tracking-[-0.02em] sm:text-5xl">
+            How it works
+          </h2>
+          <p className="mt-4 max-w-sm text-[#5B5B66] leading-relaxed">
+            Three steps, whichever side of the table you're on.
+          </p>
 
-          <div className="mt-6 inline-flex items-center p-1 rounded-xl bg-slate-100 gap-1">
+          <div
+            role="tablist"
+            className="mt-8 inline-flex rounded-full border border-[#16161D] p-1"
+          >
             {(["learner", "teacher"] as const).map((p) => (
               <button
                 key={p}
+                role="tab"
+                aria-selected={activePersona === p}
                 onClick={() => setActivePersona(p)}
-                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${activePersona === p ? "bg-white text-[#5357FE] shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  activePersona === p ? "bg-[#16161D] text-white" : "text-[#16161D] hover:bg-[#EDEAE2]"
+                }`}
               >
-                {p === "learner" ? "For Students & Parents" : "For Tutors"}
+                {p === "learner" ? "Parents & students" : "Tutors"}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
+        <ol className="lg:col-span-8 border-t border-[#16161D]">
           {steps.map((s, i) => (
-            <div key={s.n} className="relative rounded-2xl border border-slate-100 bg-[#f8f8ff] p-7 hover:border-[#5357FE]/20 hover:shadow-[0_4px_30px_rgba(83,87,254,0.08)] transition-all duration-300">
-              <span className="text-5xl font-black text-[#5357FE]/15 leading-none">{s.n}</span>
-              <h3 className="mt-3 text-[17px] font-bold text-slate-900">{s.title}</h3>
-              <p className="mt-2 text-sm text-slate-500 leading-relaxed">{s.desc}</p>
-              {i < steps.length - 1 && (
-                <ArrowRight className="absolute right-6 top-8 hidden h-5 w-5 text-[#5357FE]/30 md:block" />
-              )}
-            </div>
+            <li
+              key={s.title}
+              className="grid grid-cols-[3rem_1fr] gap-4 border-b border-[#E7E4DC] py-8 sm:grid-cols-[5rem_1fr_1.3fr] sm:gap-8"
+            >
+              <span className="font-serif text-3xl text-[#5357FE] sm:text-4xl">{i + 1}</span>
+              <h3 className="text-xl font-semibold tracking-tight">{s.title}</h3>
+              <p className="col-start-2 text-[15px] leading-relaxed text-[#5B5B66] sm:col-start-3">
+                {s.desc}
+              </p>
+            </li>
           ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Browse by Subject ---------- */
+function BrowseSubjects() {
+  const subjects = [
+    { name: "Mathematics", topics: "Algebra, geometry, calculus, statistics" },
+    { name: "Physics", topics: "Mechanics, electricity, optics, numericals" },
+    { name: "Chemistry", topics: "Organic, inorganic, physical, lab prep" },
+    { name: "Biology", topics: "Botany, zoology, genetics, NEET foundation" },
+    { name: "English", topics: "Grammar, literature, writing, spoken English" },
+    { name: "Computer Science", topics: "Python, Java, web basics, board practicals" },
+    { name: "Economics", topics: "Micro, macro, Indian economy" },
+    { name: "Accountancy", topics: "Journal entries, ledgers, final accounts" },
+  ];
+
+  return (
+    <section id="subjects" className="scroll-mt-16 bg-white py-20 lg:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="max-w-xl font-serif text-4xl font-normal leading-[1.05] tracking-[-0.02em] sm:text-5xl">
+            Start with a subject
+          </h2>
+          <Link
+            to="/tutors"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#16161D] underline decoration-[#C9C5BA] underline-offset-4 hover:decoration-[#5357FE] hover:text-[#5357FE]"
+          >
+            All subjects and filters <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <ul className="mt-12 grid border-t border-[#16161D] md:grid-cols-2 md:gap-x-12">
+          {subjects.map((s) => (
+            <li key={s.name} className="border-b border-[#E7E4DC]">
+              <Link
+                to="/tutors"
+                search={{ subject: s.name }}
+                className="group flex items-center justify-between gap-6 py-6"
+              >
+                <div>
+                  <p className="font-serif text-2xl tracking-[-0.01em] transition-colors group-hover:text-[#5357FE] sm:text-[28px]">
+                    {s.name}
+                  </p>
+                  <p className="mt-1 text-sm text-[#5B5B66]">{s.topics}</p>
+                </div>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E7E4DC] transition-all group-hover:border-[#5357FE] group-hover:bg-[#5357FE] group-hover:text-white">
+                  <ArrowUpRight className="h-4 w-4" />
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Featured Tutors (live data) ---------- */
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+}
+
+function FeaturedTutors() {
+  const { ref, inView } = useInView();
+  const query = useQuery({
+    queryKey: ["landing-featured-tutors"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("teacher_profiles")
+        .select(
+          "user_id, years_experience, fee_min, fee_max, mode, rating_avg, rating_count, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject)",
+        )
+        .eq("is_active", true)
+        .order("rating_avg", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  // Nothing to show yet: skip the section rather than fill it with made-up people.
+  if (query.isError || (query.isSuccess && query.data.length === 0)) return null;
+
+  const modeLabel: Record<string, string> = {
+    online: "Online",
+    offline: "In person",
+    both: "Online & in person",
+  };
+
+  return (
+    <section className="py-20 lg:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-serif text-4xl font-normal leading-[1.05] tracking-[-0.02em] sm:text-5xl">
+              A few tutors listed right now
+            </h2>
+            <p className="mt-4 max-w-lg text-[#5B5B66]">
+              Real profiles from the directory, highest rated first.
+            </p>
+          </div>
+          <Link
+            to="/tutors"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold underline decoration-[#C9C5BA] underline-offset-4 hover:decoration-[#5357FE] hover:text-[#5357FE]"
+          >
+            See everyone <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div ref={ref} className="mt-12 grid gap-5 md:grid-cols-3 stagger">
+          {query.isLoading
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-[248px] animate-pulse rounded-2xl bg-[#EDEAE2]" />
+              ))
+            : query.data!.map((t) => {
+                const name: string = t.profiles?.full_name ?? "Tutor";
+                const place = [t.profiles?.area, t.profiles?.city].filter(Boolean).join(", ");
+                const subjects = Array.from(
+                  new Set<string>((t.teacher_subjects ?? []).map((s: any) => s.subject)),
+                ).slice(0, 3);
+                return (
+                  <Link
+                    key={t.user_id}
+                    to="/tutors/$id"
+                    params={{ id: t.user_id }}
+                    className={`group flex flex-col rounded-2xl border border-[#E7E4DC] bg-white p-6 transition-colors hover:border-[#16161D] anim-fade-up ${inView ? "visible" : ""}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {t.profiles?.avatar_url ? (
+                        <img
+                          src={t.profiles.avatar_url}
+                          alt=""
+                          className="h-14 w-14 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF0FF] font-serif text-xl text-[#5357FE]">
+                          {initials(name)}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <h3 className="truncate text-lg font-semibold tracking-tight group-hover:text-[#5357FE]">
+                          {name}
+                        </h3>
+                        {place && (
+                          <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-[#5B5B66]">
+                            <MapPin className="h-3.5 w-3.5 shrink-0" />
+                            {place}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {subjects.length > 0 && (
+                      <p className="mt-5 text-[15px] text-[#16161D]">{subjects.join(" · ")}</p>
+                    )}
+                    <p className="mt-1 text-sm text-[#5B5B66]">
+                      {[
+                        t.years_experience ? `${t.years_experience} yrs experience` : null,
+                        modeLabel[t.mode],
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+
+                    <div className="mt-auto flex items-end justify-between pt-6">
+                      <div>
+                        {t.fee_min != null && (
+                          <p className="font-serif text-2xl">
+                            ₹{t.fee_min}
+                            {t.fee_max && t.fee_max !== t.fee_min ? `–${t.fee_max}` : ""}
+                            <span className="font-sans text-sm text-[#5B5B66]"> /hr</span>
+                          </p>
+                        )}
+                      </div>
+                      {t.rating_count > 0 && (
+                        <p className="flex items-center gap-1 text-sm font-semibold">
+                          <Star className="h-4 w-4 fill-[#16161D]" />
+                          {Number(t.rating_avg).toFixed(1)}
+                          <span className="font-normal text-[#5B5B66]">({t.rating_count})</span>
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
         </div>
       </div>
     </section>
@@ -632,87 +642,63 @@ function HowItWorks() {
 /* ---------- For Teachers ---------- */
 function ForTeachers() {
   const { ref, inView } = useInView();
-  const benefits = [
-    "Create a professional profile in minutes — no approvals",
-    "Reach families actively searching in your area",
-    "Showcase your qualifications, subjects, and availability",
-    "Set your own hourly rates and session schedules",
+  const points = [
+    { title: "Free to list", desc: "No sign-up fee, no monthly plan, no lead charges." },
+    { title: "Your fee, all of it", desc: "Families pay you directly. We don't take a cut." },
+    { title: "Found locally", desc: "Show up when parents in your city search for your subject." },
+    { title: "You decide", desc: "Pick your classes, boards, timings and whether you teach online." },
   ];
 
   return (
-    <section id="teachers" className="py-20 bg-[#f4f5ff]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div ref={ref} className="grid items-center gap-12 lg:grid-cols-2">
-          {/* Left: Text content */}
-          <div className={`space-y-6 anim-slide-left ${inView ? "visible" : ""}`}>
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#5357FE]/10 border border-[#5357FE]/20 px-4 py-1.5 text-xs font-semibold text-[#5357FE]">
-              <Sparkles className="h-3.5 w-3.5" />
-              Empower Your Teaching Journey
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold text-slate-900 tracking-tight leading-tight">
-              Grow your tuition practice{" "}
-              <span className="text-[#5357FE]">without any hassle.</span>
-            </h2>
-
-            <p className="text-[16px] text-slate-500 leading-relaxed max-w-lg">
-              Create a professional profile in minutes and connect with students actively looking for the right tutor.
-            </p>
-
-            <ul className="space-y-3">
-              {benefits.map((b) => (
-                <li key={b} className="flex items-center gap-3 text-[15px] text-slate-700">
-                  <div className="h-5 w-5 rounded-full bg-[#5357FE]/12 flex items-center justify-center shrink-0">
-                    <Check className="h-3 w-3 text-[#5357FE]" />
-                  </div>
-                  {b}
-                </li>
-              ))}
-            </ul>
-
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <Button className="bg-[#5357FE] hover:bg-[#4245d4] text-white rounded-xl font-bold px-6 h-11 shadow-none hover:shadow-[0_4px_20px_rgba(83,87,254,0.35)] transition-all flex items-center gap-2" asChild>
-                <Link to="/auth" search={{ mode: "signup", role: "teacher" }}>
-                  <Sparkles className="h-4 w-4" />
-                  Become a tutor
-                </Link>
-              </Button>
-              <Link
-                to="/tutors"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-[#5357FE] transition-colors"
-              >
-                Learn more <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+    <section id="teachers" className="scroll-mt-16 bg-[#16161D] text-white">
+      <div
+        ref={ref}
+        className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-28"
+      >
+        <div className={`order-2 lg:order-1 anim-fade-up ${inView ? "visible" : ""}`}>
+          <div className="overflow-hidden rounded-[28px] aspect-[4/3] lg:aspect-[5/6]">
+            <img
+              src={tutorPhoto}
+              alt="A tutor helping a student with coloured pencils at a desk"
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
           </div>
+        </div>
 
-          {/* Right: Photo with floating card */}
-          <div className={`relative anim-slide-right ${inView ? "visible" : ""}`}>
-            {/* Main photo */}
-            <div className="overflow-hidden rounded-3xl shadow-[0_20px_60px_rgba(83,87,254,0.15)] aspect-[4/3]">
-              <img
-                src={tutorImg}
-                alt="Tutor helping a student"
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
-            </div>
+        <div className={`order-1 lg:order-2 anim-fade-up ${inView ? "visible" : ""}`}>
+          <p className="text-sm font-medium text-white/60">For tutors</p>
+          <h2 className="mt-4 font-serif text-4xl font-normal leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
+            Fill your evenings with students who <em className="italic text-[#A9ABFF]">chose you</em>.
+          </h2>
+          <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/70">
+            Put up a proper profile, get found by families nearby, and run your tuition the way
+            you already do.
+          </p>
 
-            {/* Floating badge — bottom right */}
-            <div className="absolute -bottom-4 -right-4 sm:bottom-6 sm:-right-6 z-20 bg-white rounded-2xl shadow-[0_8px_32px_rgba(83,87,254,0.14)] border border-slate-100 px-4 py-3.5 flex items-center gap-3">
-              {/* Dashed circle avatar cluster */}
-              <div className="relative h-12 w-12 shrink-0">
-                <div className="h-12 w-12 rounded-full border-2 border-dashed border-[#5357FE]/40 flex items-center justify-center">
-                  <div className="h-9 w-9 rounded-full bg-[#5357FE]/10 flex items-center justify-center">
-                    <Users className="h-4 w-4 text-[#5357FE]" />
-                  </div>
-                </div>
+          <dl className="mt-10 grid gap-x-10 border-t border-white/15 sm:grid-cols-2">
+            {points.map((p) => (
+              <div key={p.title} className="border-b border-white/15 py-5">
+                <dt className="font-semibold">{p.title}</dt>
+                <dd className="mt-1 text-sm leading-relaxed text-white/60">{p.desc}</dd>
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-900 leading-tight">Thousands of tutors</p>
-                <p className="text-xs text-slate-400 mt-0.5">already growing with us</p>
-              </div>
-            </div>
+            ))}
+          </dl>
+
+          <div className="mt-10 flex flex-wrap items-center gap-6">
+            <Link
+              to="/auth"
+              search={{ mode: "signup", role: "teacher" }}
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-7 text-sm font-semibold text-[#16161D] transition-colors hover:bg-[#A9ABFF]"
+            >
+              Create your tutor profile <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/tutors"
+              className="text-sm font-semibold text-white/80 underline decoration-white/30 underline-offset-4 hover:text-white hover:decoration-white"
+            >
+              See how other tutors present themselves
+            </Link>
           </div>
         </div>
       </div>
@@ -722,81 +708,37 @@ function ForTeachers() {
 
 /* ---------- Testimonials ---------- */
 function Testimonials() {
-  const { ref, inView } = useInView();
-  const reviews = [
-    { quote: "Found a brilliant Maths tutor for my son in two days. His grades and confidence have both jumped.", name: "Anita S.", role: "Parent, Bengaluru", img: parentImg, rating: 5 },
-    { quote: "I'm a first-year college student and found a great Physics tutor nearby. They are affordable, patient, and explain everything clearly.", name: "Karan D.", role: "Student, Pune", img: studentImg, rating: 5 },
-    { quote: "As a tutor, TutorConnect filled my weekday evenings within a month. The profile-first approach really works.", name: "Meera R.", role: "Tutor, Hyderabad", img: tutorImg, rating: 5 },
+  const [lead, ...rest] = [
+    { quote: "Found a brilliant Maths tutor for my son in two days. His grades and confidence have both jumped.", name: "Anita S.", role: "Parent, Bengaluru" },
+    { quote: "I'm a first-year college student and found a great Physics tutor nearby. Affordable, patient, and explains everything clearly.", name: "Karan D.", role: "Student, Pune" },
+    { quote: "TutorConnect filled my weekday evenings within a month. The profile-first approach really works.", name: "Meera R.", role: "Tutor, Hyderabad" },
   ];
 
   return (
-    <section className="py-20 sm:py-28 bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-100 px-3.5 py-1.5 text-xs font-semibold text-rose-500 mb-4">
-            <Heart className="h-3.5 w-3.5 fill-rose-400 text-rose-400" />
-            Success Stories
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Loved by families and tutors{" "}
-            <span className="text-[#5357FE]">across India</span>
-          </h2>
-        </div>
+    <section className="bg-white py-20 lg:py-28">
+      <div className="mx-auto grid max-w-7xl gap-14 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
+        <figure className="lg:col-span-7">
+          <span aria-hidden className="block font-serif text-8xl leading-[0.6] text-[#5357FE]">
+            “
+          </span>
+          <blockquote className="mt-4 font-serif text-3xl leading-[1.2] tracking-[-0.01em] sm:text-4xl lg:text-[44px]">
+            {lead.quote}
+          </blockquote>
+          <figcaption className="mt-8 text-sm">
+            <span className="font-semibold">{lead.name}</span>
+            <span className="text-[#5B5B66]"> · {lead.role}</span>
+          </figcaption>
+        </figure>
 
-        <div ref={ref} className="grid gap-6 md:grid-cols-3 stagger">
-          {reviews.map((r) => (
-            <figure
-              key={r.name}
-              className={`relative flex flex-col rounded-2xl bg-white border border-slate-100 shadow-[0_4px_24px_rgba(83,87,254,0.06)] p-7 hover:shadow-[0_8px_40px_rgba(83,87,254,0.12)] hover:border-[#5357FE]/15 transition-all duration-300 anim-fade-up ${inView ? "visible" : ""}`}
-            >
-              {/* Large quotation mark watermark */}
-              <span
-                aria-hidden="true"
-                className="absolute top-5 right-6 text-6xl font-black leading-none text-[#5357FE]/15 select-none"
-              >
-                ”
-              </span>
-
-              {/* Stars */}
-              <div className="flex gap-0.5 mb-5">
-                {Array.from({ length: r.rating }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-
-              {/* Quote */}
-              <blockquote className="flex-1 text-[15px] text-slate-700 leading-relaxed">
-                "{r.quote}"
-              </blockquote>
-
-              {/* Author */}
-              <figcaption className="mt-6 flex items-center gap-3 pt-5 border-t border-slate-100">
-                <img
-                  src={r.img}
-                  alt={r.name}
-                  width={44}
-                  height={44}
-                  loading="lazy"
-                  className="h-11 w-11 rounded-full object-cover ring-2 ring-white shadow-sm"
-                />
-                <div>
-                  <p className="text-sm font-bold text-slate-900">{r.name}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{r.role}</p>
-                </div>
+        <div className="space-y-10 lg:col-span-5 lg:border-l lg:border-[#E7E4DC] lg:pl-12 lg:pt-6">
+          {rest.map((r) => (
+            <figure key={r.name}>
+              <blockquote className="text-lg leading-relaxed text-[#16161D]">“{r.quote}”</blockquote>
+              <figcaption className="mt-4 text-sm">
+                <span className="font-semibold">{r.name}</span>
+                <span className="text-[#5B5B66]"> · {r.role}</span>
               </figcaption>
             </figure>
-          ))}
-        </div>
-
-        {/* Pagination dots */}
-        <div className="flex justify-center gap-2 mt-10">
-          {reviews.map((_, i) => (
-            <span
-              key={i}
-              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                i === 0 ? "w-7 bg-[#5357FE]" : "w-2.5 bg-slate-300 hover:bg-slate-400"
-              }`}
-            />
           ))}
         </div>
       </div>
@@ -815,25 +757,24 @@ function FAQ() {
   ];
 
   return (
-    <section id="faq" className="py-20 sm:py-28 bg-white">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <span className="inline-block text-xs font-bold text-[#5357FE] uppercase tracking-widest mb-3">FAQ</span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Common questions</h2>
-          <p className="mt-3 text-slate-500">Everything you need to know before getting started.</p>
+    <section id="faq" className="scroll-mt-16 py-20 lg:py-28">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
+        <div className="lg:col-span-4">
+          <h2 className="font-serif text-4xl font-normal leading-[1.05] tracking-[-0.02em] sm:text-5xl">
+            Questions people ask
+          </h2>
+          <p className="mt-4 max-w-sm text-[#5B5B66] leading-relaxed">
+            If yours isn't here, the quickest answer is usually on a tutor's profile.
+          </p>
         </div>
 
-        <Accordion type="single" collapsible className="space-y-3">
+        <Accordion type="single" collapsible className="lg:col-span-8 border-t border-[#16161D]">
           {faqs.map((f, i) => (
-            <AccordionItem
-              key={i}
-              value={`item-${i}`}
-              className="rounded-2xl border border-slate-100 bg-white px-6 shadow-[0_2px_12px_rgba(0,0,0,0.04)] data-[state=open]:border-[#5357FE]/20 data-[state=open]:shadow-[0_4px_24px_rgba(83,87,254,0.08)] transition-all duration-300"
-            >
-              <AccordionTrigger className="text-left text-[15px] font-bold text-slate-900 hover:no-underline py-5">
+            <AccordionItem key={i} value={`item-${i}`} className="border-b border-[#E7E4DC]">
+              <AccordionTrigger className="py-6 text-left text-lg font-semibold tracking-tight hover:no-underline hover:text-[#5357FE]">
                 {f.q}
               </AccordionTrigger>
-              <AccordionContent className="text-sm leading-relaxed text-slate-500 pb-5">
+              <AccordionContent className="max-w-2xl pb-6 text-[15px] leading-relaxed text-[#5B5B66]">
                 {f.a}
               </AccordionContent>
             </AccordionItem>
@@ -847,31 +788,26 @@ function FAQ() {
 /* ---------- CTA Section ---------- */
 function CTASection() {
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[#f8f8ff]">
-      <div className="mx-auto max-w-7xl">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#5357FE] via-[#6366f1] to-[#7c3aed] px-8 py-16 sm:px-16 sm:py-20 text-center">
-          <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/5 blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-white/5 blur-2xl pointer-events-none" />
-
-          <div className="relative">
-            <span className="inline-block text-xs font-bold text-indigo-200 uppercase tracking-widest mb-4">Get Started Today</span>
-            <h2 className="mx-auto max-w-2xl text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white tracking-tight leading-tight">
-              Start learning with a tutor who actually fits you.
-            </h2>
-            <p className="mx-auto mt-5 max-w-xl text-[17px] text-indigo-200 leading-relaxed">
-              Join thousands of parents and students using TutorConnect to find the right teacher, in their area, at the right price.
-            </p>
-            <div className="mt-10 flex flex-wrap justify-center gap-4">
-              <Button size="lg" className="bg-white text-[#5357FE] hover:bg-white/90 rounded-xl font-bold px-8 text-[15px] shadow-[0_4px_20px_rgba(255,255,255,0.3)] transition-all" asChild>
-                <Link to="/auth" search={{ mode: "signup" }}>Find a Tutor</Link>
-              </Button>
-              <Button size="lg" variant="outline" className="border-white/30 text-white bg-white/10 hover:bg-white/20 hover:text-white rounded-xl font-semibold px-8 text-[15px] transition-all" asChild>
-                <Link to="/auth" search={{ mode: "signup", role: "teacher" }}>
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  Become a Tutor
-                </Link>
-              </Button>
-            </div>
+    <section className="px-4 pb-20 sm:px-6 lg:px-8 lg:pb-28">
+      <div className="mx-auto max-w-7xl rounded-[28px] bg-[#5357FE] px-6 py-16 text-white sm:px-12 lg:px-16 lg:py-20">
+        <div className="grid items-end gap-10 lg:grid-cols-12">
+          <h2 className="font-serif text-4xl font-normal leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:col-span-8 lg:text-6xl">
+            Your first message to a tutor is free. So is your hundredth.
+          </h2>
+          <div className="flex flex-col gap-3 sm:flex-row lg:col-span-4 lg:flex-col lg:items-end">
+            <Link
+              to="/tutors"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-7 text-sm font-semibold text-[#16161D] transition-colors hover:bg-[#16161D] hover:text-white"
+            >
+              Find a tutor <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/auth"
+              search={{ mode: "signup", role: "teacher" }}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-white/40 px-7 text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white/10"
+            >
+              I'm a tutor
+            </Link>
           </div>
         </div>
       </div>
@@ -882,46 +818,39 @@ function CTASection() {
 /* ---------- Footer ---------- */
 function Footer() {
   return (
-    <footer className="bg-[#0f172a] text-slate-400">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-10">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-10 pb-12 border-b border-white/8">
-          {/* Brand col */}
-          <div className="md:col-span-2 space-y-4">
-            <Brand className="h-8 brightness-0 invert" />
-            <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
-              Helping families and independent tutors connect locally, transparently, and directly across India.
+    <footer className="border-t border-[#E7E4DC]">
+      <div className="mx-auto max-w-7xl px-4 pt-14 pb-10 sm:px-6 lg:px-8">
+        <div className="grid gap-10 md:grid-cols-12">
+          <div className="md:col-span-6">
+            <Brand className="h-7" />
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-[#5B5B66]">
+              A directory of local and online tutors across India. Families and tutors connect
+              directly. We stay out of the way.
             </p>
-            <div className="flex gap-3 pt-2">
-              {[Twitter, Instagram, Linkedin, Facebook].map((Icon, i) => (
-                <a key={i} href="#" className="h-9 w-9 rounded-xl bg-white/8 hover:bg-[#5357FE] flex items-center justify-center transition-all duration-200 group">
-                  <Icon className="h-4 w-4 text-slate-400 group-hover:text-white transition-colors" />
-                </a>
-              ))}
-            </div>
           </div>
 
-          <FooterCol title="Product" links={[
-            { label: "Find Tutors", href: "/tutors" },
-            { label: "How it Works", href: "#how" },
-            { label: "Browse Subjects", href: "#subjects" },
-            { label: "For Tutors", href: "#teachers" },
-          ]} />
-          <FooterCol title="Company" links={[
-            { label: "About Us", href: "#" },
-            { label: "Blog", href: "#" },
-            { label: "Careers", href: "#" },
-            { label: "Contact", href: "#" },
-          ]} />
-          <FooterCol title="Legal" links={[
-            { label: "Privacy Policy", href: "/privacy" },
-            { label: "Terms of Service", href: "/terms" },
-            { label: "FAQ", href: "#faq" },
-          ]} />
+          <FooterCol
+            title="Explore"
+            links={[
+              { label: "Find tutors", href: "/tutors" },
+              { label: "How it works", href: "#how" },
+              { label: "Subjects", href: "#subjects" },
+              { label: "For tutors", href: "#teachers" },
+            ]}
+          />
+          <FooterCol
+            title="Legal"
+            links={[
+              { label: "Privacy policy", href: "/privacy" },
+              { label: "Terms of service", href: "/terms" },
+              { label: "FAQ", href: "#faq" },
+            ]}
+          />
         </div>
 
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} TutorConnect. All rights reserved.</p>
-          <p>Made with ♥ for learners, everywhere.</p>
+        <div className="mt-14 flex flex-col gap-2 border-t border-[#E7E4DC] pt-6 text-xs text-[#8A8A94] sm:flex-row sm:justify-between">
+          <p>© {new Date().getFullYear()} TutorConnect</p>
+          <p>Free for families. Free for tutors.</p>
         </div>
       </div>
     </footer>
@@ -930,12 +859,14 @@ function Footer() {
 
 function FooterCol({ title, links }: { title: string; links: { label: string; href: string }[] }) {
   return (
-    <div>
-      <h4 className="text-sm font-bold text-white mb-5">{title}</h4>
-      <ul className="space-y-3">
+    <div className="md:col-span-3">
+      <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8A8A94]">{title}</h4>
+      <ul className="mt-4 space-y-3">
         {links.map((link) => (
           <li key={link.label}>
-            <a href={link.href} className="text-sm text-slate-400 hover:text-white transition-colors duration-150">{link.label}</a>
+            <a href={link.href} className="text-sm text-[#16161D] hover:text-[#5357FE] transition-colors">
+              {link.label}
+            </a>
           </li>
         ))}
       </ul>

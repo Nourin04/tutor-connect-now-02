@@ -114,6 +114,10 @@ function TutorsPage() {
     const params = new URLSearchParams(window.location.search);
     const city = params.get("city") || "";
     const subject = params.get("subject") || "";
+    const q = params.get("q") || "";
+    if (q) {
+      set("q", q);
+    }
     if (city) {
       set("city", city);
     }
