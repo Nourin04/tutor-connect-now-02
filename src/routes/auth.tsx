@@ -83,13 +83,13 @@ function AuthPage() {
     <div className="min-h-screen w-full flex bg-white transition-colors duration-300 relative">
       {authLoading && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4665FF]"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5357FE]"></div>
           <p className="mt-4 text-sm font-semibold text-[#1A1A1A]">Redirecting...</p>
         </div>
       )}
       {/* Left side: Brand blue background with custom 3D illustration — hidden on role selection screen */}
       {!isChooseRole && (
-        <div className="hidden md:flex md:w-[45%] bg-[#4665FF] shrink-0 items-center justify-center p-8 lg:p-12 relative overflow-hidden">
+        <div className="hidden md:flex md:w-[45%] bg-[#5357FE] shrink-0 items-center justify-center p-8 lg:p-12 relative overflow-hidden">
           <img
             src={authIllustration}
             alt="TutorConnect Learning Illustration"
@@ -195,7 +195,7 @@ function SignInForm({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
-            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
+            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#5357FE]/10 focus-visible:border-[#5357FE] transition-all placeholder:text-muted-foreground/60"
           />
         </div>
 
@@ -211,7 +211,7 @@ function SignInForm({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
-              className="w-full h-10 pl-4 pr-12 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
+              className="w-full h-10 pl-4 pr-12 rounded-md border border-[#E2E8F0] bg-[#F8F9FE] focus-visible:ring-2 focus-visible:ring-[#5357FE]/10 focus-visible:border-[#5357FE] transition-all"
             />
             <button
               type="button"
@@ -229,7 +229,7 @@ function SignInForm({
         <Button
           type="submit"
           disabled={loading}
-          className="w-full h-10 rounded-md bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm !mt-6"
+          className="w-full h-10 rounded-md bg-[#5357FE] hover:bg-[#5357FE]/95 text-white font-medium transition-all shadow-sm !mt-6"
         >
           {loading ? "Signing in…" : "Sign in"}
         </Button>
@@ -239,7 +239,7 @@ function SignInForm({
         <a
           href="#"
           onClick={handleForgotPassword}
-          className="text-sm font-medium text-[#4665FF] hover:underline transition-colors"
+          className="text-sm font-medium text-[#5357FE] hover:underline transition-colors"
         >
           Forgot your password?
         </a>
@@ -364,7 +364,7 @@ function SignUpForm({
             onChange={(e) => setField("fullName", e.target.value)}
             required
             maxLength={80}
-            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all"
+            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#5357FE]/10 focus-visible:border-[#5357FE] transition-all"
           />
           {errors.fullName && <p className="text-xs text-destructive mt-1">{errors.fullName}</p>}
         </div>
@@ -382,7 +382,7 @@ function SignUpForm({
             required
             maxLength={255}
             autoComplete="email"
-            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
+            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#5357FE]/10 focus-visible:border-[#5357FE] transition-all placeholder:text-muted-foreground/60"
           />
           {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
         </div>
@@ -398,7 +398,7 @@ function SignUpForm({
             value={form.phone}
             onChange={(e) => setField("phone", e.target.value)}
             maxLength={20}
-            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/60"
+            className="w-full h-10 px-4 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#5357FE]/10 focus-visible:border-[#5357FE] transition-all placeholder:text-muted-foreground/60"
           />
           {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
         </div>
@@ -415,7 +415,7 @@ function SignUpForm({
               required
               maxLength={72}
               autoComplete="new-password"
-              className="w-full h-10 pl-4 pr-12 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/40"
+              className="w-full h-10 pl-4 pr-12 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#5357FE]/10 focus-visible:border-[#5357FE] transition-all placeholder:text-muted-foreground/40"
             />
             <button
               type="button"
@@ -441,7 +441,7 @@ function SignUpForm({
               required
               maxLength={72}
               autoComplete="new-password"
-              className="w-full h-10 pl-4 pr-12 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#4665FF]/10 focus-visible:border-[#4665FF] transition-all placeholder:text-muted-foreground/40"
+              className="w-full h-10 pl-4 pr-12 rounded-md border border-[#E2E8F0] bg-white focus-visible:ring-2 focus-visible:ring-[#5357FE]/10 focus-visible:border-[#5357FE] transition-all placeholder:text-muted-foreground/40"
             />
             <button
               type="button"
@@ -457,7 +457,7 @@ function SignUpForm({
         <Button
           type="submit"
           disabled={loading}
-          className="w-full h-10 rounded-md bg-[#4665FF] hover:bg-[#4665FF]/95 text-white font-medium transition-all shadow-sm !mt-6"
+          className="w-full h-10 rounded-md bg-[#5357FE] hover:bg-[#5357FE]/95 text-white font-medium transition-all shadow-sm !mt-6"
         >
           {loading ? "Creating account…" : "Create account"}
         </Button>

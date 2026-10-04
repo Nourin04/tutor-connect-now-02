@@ -155,14 +155,14 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
                 <Link
                   to="/auth"
                   search={{ mode: "signin" }}
-                  className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
+                  className="text-sm font-semibold text-[#5357FE] hover:text-[#5357FE]/85 hover:underline px-3 py-2 transition-all"
                 >
                   Sign in
                 </Link>
                 <Button
                   size="sm"
                   asChild
-                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
+                  className="bg-[#5357FE] hover:bg-[#5357FE]/90 text-white rounded-md font-semibold shadow-soft"
                 >
                   <Link to="/auth" search={{ mode: "signup" }}>
                     Get started
@@ -197,7 +197,7 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
                       {unreadCount > 0 && (
                         <button
                           onClick={markAllNotificationsAsRead}
-                          className="text-xs text-[#4665FF] hover:underline font-semibold"
+                          className="text-xs text-[#5357FE] hover:underline font-semibold"
                         >
                           Mark all read
                         </button>
@@ -229,7 +229,7 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
                                 className="h-5 w-5 rounded-full border border-border flex items-center justify-center hover:bg-muted shrink-0"
                                 title="Mark as read"
                               >
-                                <Check className="h-3 w-3 text-[#4665FF]" />
+                                <Check className="h-3 w-3 text-[#5357FE]" />
                               </button>
                             )}
                           </div>
@@ -242,7 +242,7 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
                 {/* Profile Avatar Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="h-9 w-9 rounded-full border border-border relative overflow-hidden shrink-0 cursor-pointer hover:ring-2 hover:ring-[#4665FF]/40 transition-all">
+                    <button className="h-9 w-9 rounded-full border border-border relative overflow-hidden shrink-0 cursor-pointer hover:ring-2 hover:ring-[#5357FE]/40 transition-all">
                       {avatarUrl ? (
                         <img
                           src={avatarUrl}
@@ -250,7 +250,7 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-[#4665FF]/10 text-xs font-bold text-[#4665FF]">
+                        <div className="flex h-full w-full items-center justify-center bg-[#5357FE]/10 text-xs font-bold text-[#5357FE]">
                           {fullName ? (
                             capitalize(fullName).slice(0, 1)
                           ) : (
@@ -293,14 +293,14 @@ export function AppHeader({ fullWidth = false }: { fullWidth?: boolean }) {
                 <Link
                   to="/auth"
                   search={{ mode: "signin" }}
-                  className="text-sm font-semibold text-[#4665FF] hover:text-[#4665FF]/85 hover:underline px-3 py-2 transition-all"
+                  className="text-sm font-semibold text-[#5357FE] hover:text-[#5357FE]/85 hover:underline px-3 py-2 transition-all"
                 >
                   Sign in
                 </Link>
                 <Button
                   size="sm"
                   asChild
-                  className="bg-[#4665FF] hover:bg-[#4665FF]/90 text-white rounded-md font-semibold shadow-soft"
+                  className="bg-[#5357FE] hover:bg-[#5357FE]/90 text-white rounded-md font-semibold shadow-soft"
                 >
                   <Link to="/auth" search={{ mode: "signup" }}>
                     Get started
