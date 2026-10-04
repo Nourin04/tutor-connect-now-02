@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrimaryRole, dashboardPathForRole } from "@/lib/auth-helpers";
 import { Brand } from "@/components/site/Brand";
@@ -10,7 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Search, MapPin, Star, ArrowRight, ArrowUpRight, Menu, X } from "lucide-react";
+import { Search, MapPin, ArrowRight, ArrowUpRight, Menu, X } from "lucide-react";
 import heroPhoto from "@/assets/01.png";
 import tutorPhoto from "@/assets/02.png";
 
@@ -106,7 +105,6 @@ function Landing() {
         <Promises />
         <HowItWorks />
         <BrowseSubjects />
-        <FeaturedTutors />
         <ForTeachers />
         <Testimonials />
         <FAQ />
@@ -254,14 +252,13 @@ function Hero() {
             </p>
 
             <h1 className="mt-6 font-serif font-normal text-[44px] leading-[1.02] tracking-[-0.03em] sm:text-6xl lg:text-[80px]">
-              The right tutor is <em className="italic text-[#5357FE]">probably</em> just down
-              the road.
+              The right tutor is <em className="italic text-[#5357FE]">probably</em> just down the
+              road.
             </h1>
 
             <p className="mt-7 max-w-xl text-lg leading-relaxed text-[#5B5B66]">
-              TutorConnect lists local and online tutors with their real fees, subjects and
-              boards. Find someone you like and contact them yourself. No middleman, no
-              commission.
+              TutorConnect lists local and online tutors with their real fees, subjects and boards.
+              Find someone you like and contact them yourself. No middleman, no commission.
             </p>
 
             <form
@@ -332,8 +329,8 @@ function Hero() {
             </div>
             <figcaption className="mt-4 flex gap-3 text-sm leading-relaxed text-[#5B5B66]">
               <span className="mt-2.5 h-px w-6 shrink-0 bg-[#16161D]" />
-              Every profile shows fees, subjects, boards and teaching mode up front, before you
-              send a single message.
+              Every profile shows fees, subjects, boards and teaching mode up front, before you send
+              a single message.
             </figcaption>
           </figure>
         </div>
@@ -359,9 +356,18 @@ function Hero() {
 /* ---------- Promises (honest numbers only) ---------- */
 function Promises() {
   const items = [
-    { big: "₹0", text: "What parents and students pay TutorConnect. Browsing and contacting tutors is free." },
-    { big: "0%", text: "Commission on tutors' fees. You pay the tutor directly, at the rate on their profile." },
-    { big: "1:1", text: "You speak to the tutor yourself. No call centre in between, no reassignments." },
+    {
+      big: "₹0",
+      text: "What parents and students pay TutorConnect. Browsing and contacting tutors is free.",
+    },
+    {
+      big: "0%",
+      text: "Commission on tutors' fees. You pay the tutor directly, at the rate on their profile.",
+    },
+    {
+      big: "1:1",
+      text: "You speak to the tutor yourself. No call centre in between, no reassignments.",
+    },
   ];
 
   return (
@@ -383,15 +389,33 @@ function HowItWorks() {
   const [activePersona, setActivePersona] = useState<"learner" | "teacher">("learner");
 
   const learnerSteps = [
-    { title: "Search by what you actually need", desc: "Subject, class, board, city, and whether you want lessons online or at home." },
-    { title: "Read the profiles properly", desc: "Qualifications, experience, fees and reviews are all there. Shortlist the ones that fit." },
-    { title: "Contact the tutor directly", desc: "Message them, agree on a trial class and timings, and pay them however you both prefer." },
+    {
+      title: "Search by what you actually need",
+      desc: "Subject, class, board, city, and whether you want lessons online or at home.",
+    },
+    {
+      title: "Read the profiles properly",
+      desc: "Qualifications, experience, fees and reviews are all there. Shortlist the ones that fit.",
+    },
+    {
+      title: "Contact the tutor directly",
+      desc: "Message them, agree on a trial class and timings, and pay them however you both prefer.",
+    },
   ];
 
   const teacherSteps = [
-    { title: "Make a free profile", desc: "Add your subjects, classes, boards, fees and when you're available. Takes a few minutes." },
-    { title: "Show up in local searches", desc: "Parents and students searching in your city and subject will find your profile." },
-    { title: "Teach on your terms", desc: "Families contact you directly. You set the fee and the schedule, and keep all of it." },
+    {
+      title: "Make a free profile",
+      desc: "Add your subjects, classes, boards, fees and when you're available. Takes a few minutes.",
+    },
+    {
+      title: "Show up in local searches",
+      desc: "Parents and students searching in your city and subject will find your profile.",
+    },
+    {
+      title: "Teach on your terms",
+      desc: "Families contact you directly. You set the fee and the schedule, and keep all of it.",
+    },
   ];
 
   const steps = activePersona === "learner" ? learnerSteps : teacherSteps;
@@ -407,10 +431,7 @@ function HowItWorks() {
             Three steps, whichever side of the table you're on.
           </p>
 
-          <div
-            role="tablist"
-            className="mt-8 inline-flex rounded-full border border-[#16161D] p-1"
-          >
+          <div role="tablist" className="mt-8 inline-flex rounded-full border border-[#16161D] p-1">
             {(["learner", "teacher"] as const).map((p) => (
               <button
                 key={p}
@@ -418,7 +439,9 @@ function HowItWorks() {
                 aria-selected={activePersona === p}
                 onClick={() => setActivePersona(p)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                  activePersona === p ? "bg-[#16161D] text-white" : "text-[#16161D] hover:bg-[#EDEAE2]"
+                  activePersona === p
+                    ? "bg-[#16161D] text-white"
+                    : "text-[#16161D] hover:bg-[#EDEAE2]"
                 }`}
               >
                 {p === "learner" ? "Parents & students" : "Tutors"}
@@ -500,145 +523,6 @@ function BrowseSubjects() {
   );
 }
 
-/* ---------- Featured Tutors (live data) ---------- */
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join("");
-}
-
-function FeaturedTutors() {
-  const { ref, inView } = useInView();
-  const query = useQuery({
-    queryKey: ["landing-featured-tutors"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teacher_profiles")
-        .select(
-          "user_id, years_experience, fee_min, fee_max, mode, rating_avg, rating_count, profiles!inner(full_name, city, area, avatar_url), teacher_subjects(subject)",
-        )
-        .eq("is_active", true)
-        .order("rating_avg", { ascending: false })
-        .limit(3);
-      if (error) throw error;
-      return (data ?? []) as any[];
-    },
-  });
-
-  // Nothing to show yet: skip the section rather than fill it with made-up people.
-  if (query.isError || (query.isSuccess && query.data.length === 0)) return null;
-
-  const modeLabel: Record<string, string> = {
-    online: "Online",
-    offline: "In person",
-    both: "Online & in person",
-  };
-
-  return (
-    <section className="py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="font-serif text-4xl font-normal leading-[1.05] tracking-[-0.02em] sm:text-5xl">
-              A few tutors listed right now
-            </h2>
-            <p className="mt-4 max-w-lg text-[#5B5B66]">
-              Real profiles from the directory, highest rated first.
-            </p>
-          </div>
-          <Link
-            to="/tutors"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold underline decoration-[#C9C5BA] underline-offset-4 hover:decoration-[#5357FE] hover:text-[#5357FE]"
-          >
-            See everyone <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        <div ref={ref} className="mt-12 grid gap-5 md:grid-cols-3 stagger">
-          {query.isLoading
-            ? Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-[248px] animate-pulse rounded-2xl bg-[#EDEAE2]" />
-              ))
-            : query.data!.map((t) => {
-                const name: string = t.profiles?.full_name ?? "Tutor";
-                const place = [t.profiles?.area, t.profiles?.city].filter(Boolean).join(", ");
-                const subjects = Array.from(
-                  new Set<string>((t.teacher_subjects ?? []).map((s: any) => s.subject)),
-                ).slice(0, 3);
-                return (
-                  <Link
-                    key={t.user_id}
-                    to="/tutors/$id"
-                    params={{ id: t.user_id }}
-                    className={`group flex flex-col rounded-2xl border border-[#E7E4DC] bg-white p-6 transition-colors hover:border-[#16161D] anim-fade-up ${inView ? "visible" : ""}`}
-                  >
-                    <div className="flex items-center gap-4">
-                      {t.profiles?.avatar_url ? (
-                        <img
-                          src={t.profiles.avatar_url}
-                          alt=""
-                          className="h-14 w-14 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF0FF] font-serif text-xl text-[#5357FE]">
-                          {initials(name)}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <h3 className="truncate text-lg font-semibold tracking-tight group-hover:text-[#5357FE]">
-                          {name}
-                        </h3>
-                        {place && (
-                          <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-[#5B5B66]">
-                            <MapPin className="h-3.5 w-3.5 shrink-0" />
-                            {place}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {subjects.length > 0 && (
-                      <p className="mt-5 text-[15px] text-[#16161D]">{subjects.join(" · ")}</p>
-                    )}
-                    <p className="mt-1 text-sm text-[#5B5B66]">
-                      {[
-                        t.years_experience ? `${t.years_experience} yrs experience` : null,
-                        modeLabel[t.mode],
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-
-                    <div className="mt-auto flex items-end justify-between pt-6">
-                      <div>
-                        {t.fee_min != null && (
-                          <p className="font-serif text-2xl">
-                            ₹{t.fee_min}
-                            {t.fee_max && t.fee_max !== t.fee_min ? `–${t.fee_max}` : ""}
-                            <span className="font-sans text-sm text-[#5B5B66]"> /hr</span>
-                          </p>
-                        )}
-                      </div>
-                      {t.rating_count > 0 && (
-                        <p className="flex items-center gap-1 text-sm font-semibold">
-                          <Star className="h-4 w-4 fill-[#16161D]" />
-                          {Number(t.rating_avg).toFixed(1)}
-                          <span className="font-normal text-[#5B5B66]">({t.rating_count})</span>
-                        </p>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ---------- For Teachers ---------- */
 function ForTeachers() {
   const { ref, inView } = useInView();
@@ -646,7 +530,10 @@ function ForTeachers() {
     { title: "Free to list", desc: "No sign-up fee, no monthly plan, no lead charges." },
     { title: "Your fee, all of it", desc: "Families pay you directly. We don't take a cut." },
     { title: "Found locally", desc: "Show up when parents in your city search for your subject." },
-    { title: "You decide", desc: "Pick your classes, boards, timings and whether you teach online." },
+    {
+      title: "You decide",
+      desc: "Pick your classes, boards, timings and whether you teach online.",
+    },
   ];
 
   return (
@@ -669,11 +556,12 @@ function ForTeachers() {
         <div className={`order-1 lg:order-2 anim-fade-up ${inView ? "visible" : ""}`}>
           <p className="text-sm font-medium text-white/60">For tutors</p>
           <h2 className="mt-4 font-serif text-4xl font-normal leading-[1.05] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
-            Fill your evenings with students who <em className="italic text-[#A9ABFF]">chose you</em>.
+            Fill your evenings with students who{" "}
+            <em className="italic text-[#A9ABFF]">chose you</em>.
           </h2>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/70">
-            Put up a proper profile, get found by families nearby, and run your tuition the way
-            you already do.
+            Put up a proper profile, get found by families nearby, and run your tuition the way you
+            already do.
           </p>
 
           <dl className="mt-10 grid gap-x-10 border-t border-white/15 sm:grid-cols-2">
@@ -709,9 +597,24 @@ function ForTeachers() {
 /* ---------- Testimonials ---------- */
 function Testimonials() {
   const [lead, ...rest] = [
-    { quote: "Found a brilliant Maths tutor for my son in two days. His grades and confidence have both jumped.", name: "Anita S.", role: "Parent, Bengaluru" },
-    { quote: "I'm a first-year college student and found a great Physics tutor nearby. Affordable, patient, and explains everything clearly.", name: "Karan D.", role: "Student, Pune" },
-    { quote: "TutorConnect filled my weekday evenings within a month. The profile-first approach really works.", name: "Meera R.", role: "Tutor, Hyderabad" },
+    {
+      quote:
+        "Found a brilliant Maths tutor for my son in two days. His grades and confidence have both jumped.",
+      name: "Anita S.",
+      role: "Parent, Bengaluru",
+    },
+    {
+      quote:
+        "I'm a first-year college student and found a great Physics tutor nearby. Affordable, patient, and explains everything clearly.",
+      name: "Karan D.",
+      role: "Student, Pune",
+    },
+    {
+      quote:
+        "TutorConnect filled my weekday evenings within a month. The profile-first approach really works.",
+      name: "Meera R.",
+      role: "Tutor, Hyderabad",
+    },
   ];
 
   return (
@@ -733,7 +636,9 @@ function Testimonials() {
         <div className="space-y-10 lg:col-span-5 lg:border-l lg:border-[#E7E4DC] lg:pl-12 lg:pt-6">
           {rest.map((r) => (
             <figure key={r.name}>
-              <blockquote className="text-lg leading-relaxed text-[#16161D]">“{r.quote}”</blockquote>
+              <blockquote className="text-lg leading-relaxed text-[#16161D]">
+                “{r.quote}”
+              </blockquote>
               <figcaption className="mt-4 text-sm">
                 <span className="font-semibold">{r.name}</span>
                 <span className="text-[#5B5B66]"> · {r.role}</span>
@@ -749,11 +654,26 @@ function Testimonials() {
 /* ---------- FAQ ---------- */
 function FAQ() {
   const faqs = [
-    { q: "Is TutorConnect free to use?", a: "Yes. Browsing tutors, viewing profiles, and contacting them is completely free for parents and students. Tutors can also list their profiles at no cost." },
-    { q: "How do I evaluate a tutor?", a: "Every tutor profile displays detailed qualifications, educational background, years of teaching experience, fee structures, and specialized subjects so you can make an informed decision." },
-    { q: "Do you support online and in-person tutoring?", a: "Both. Filter by mode of teaching (online, offline, or both) and find a tutor that fits the way you or your child learns best." },
-    { q: "Can I cover specific boards like CBSE, ICSE or State?", a: "Yes. Tutors specify their syllabus/board specialization on their profile, so you can filter by CBSE, ICSE, State boards, IB, IGCSE, and exam prep like NEET and JEE." },
-    { q: "How do I pay the tutor?", a: "Payments happen directly between you and the tutor at the rate listed on their profile. TutorConnect doesn't charge any fees or commissions." },
+    {
+      q: "Is TutorConnect free to use?",
+      a: "Yes. Browsing tutors, viewing profiles, and contacting them is completely free for parents and students. Tutors can also list their profiles at no cost.",
+    },
+    {
+      q: "How do I evaluate a tutor?",
+      a: "Every tutor profile displays detailed qualifications, educational background, years of teaching experience, fee structures, and specialized subjects so you can make an informed decision.",
+    },
+    {
+      q: "Do you support online and in-person tutoring?",
+      a: "Both. Filter by mode of teaching (online, offline, or both) and find a tutor that fits the way you or your child learns best.",
+    },
+    {
+      q: "Can I cover specific boards like CBSE, ICSE or State?",
+      a: "Yes. Tutors specify their syllabus/board specialization on their profile, so you can filter by CBSE, ICSE, State boards, IB, IGCSE, and exam prep like NEET and JEE.",
+    },
+    {
+      q: "How do I pay the tutor?",
+      a: "Payments happen directly between you and the tutor at the rate listed on their profile. TutorConnect doesn't charge any fees or commissions.",
+    },
   ];
 
   return (
@@ -864,7 +784,10 @@ function FooterCol({ title, links }: { title: string; links: { label: string; hr
       <ul className="mt-4 space-y-3">
         {links.map((link) => (
           <li key={link.label}>
-            <a href={link.href} className="text-sm text-[#16161D] hover:text-[#5357FE] transition-colors">
+            <a
+              href={link.href}
+              className="text-sm text-[#16161D] hover:text-[#5357FE] transition-colors"
+            >
               {link.label}
             </a>
           </li>
